@@ -1,22 +1,21 @@
 package traceinspector
 
-type node_types string
-
-const (
-	node_basic node_types = "basic"
-	node_cond  node_types = "cond"
+import (
+	"fmt"
+	"go/ast"
+	"go/token"
 )
 
-type CFGNode struct {
-	id        int
-	code      string
-	node_type node_types
-	line_num  int
-}
-
-type CFGEdge struct {
-	id           int
-	from_node_id int
-	to_node_id   int
-	label        string
+func Print_cfg(file *ast.File, fset *token.FileSet) {
+	for _, decls := range file.Decls {
+		switch decl_node := decls.(type) {
+		case *ast.FuncDecl:
+			if decl_node.Name.Name == "main" {
+				cfg_graph := CFGGraph{}
+				cfg_creator := CFGGraphCreator{fset: fset, cfg_graph: &cfg_graph, next_node_index: 1}
+				cfg_creator.create_cfg_method(decl_node.Body)
+				fmt.Println(string(cfg_creator.cfg_graph.to_json()))
+			}
+		}
+	}
 }
