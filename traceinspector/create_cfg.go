@@ -3,10 +3,10 @@ package traceinspector
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/token"
+	"os"
 )
 
 // if node id is leq 0, then the node doesn't exist
@@ -117,6 +117,10 @@ func Print_cfg(file *ast.File, fset *token.FileSet) {
 		}
 	}
 	// result, _ := json.Marshal(func_cfg_map)
-	result, _ := json.MarshalIndent(func_cfg_map, "", "    ") // return formatted
-	fmt.Println(string(result))
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "    ")
+	// result, _ := json.MarshalIndent(func_cfg_map, "", "    ") // return formatted
+	// fmt.Println(string(result))
+	enc.Encode(func_cfg_map)
 }
