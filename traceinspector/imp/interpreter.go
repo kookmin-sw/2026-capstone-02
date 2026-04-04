@@ -178,13 +178,91 @@ func (interpreter *ImpInterpreter) eval_ArrayIndexExpr(node ArrayIndexExpr) ImpV
 func (interpreter *ImpInterpreter) eval_EqExpr(node EqExpr) ImpValues {
 	lhs_val := interpreter.eval_Expr(node.lhs)
 	rhs_val := interpreter.eval_Expr(node.rhs)
-	return &BoolVal{val: lhs_val == rhs_val}
+	if !check_vals_type_equal(lhs_val, rhs_val) {
+		panic(fmt.Sprint("Unsupported '==' between %s and %s"))
+	}
+	switch lhs_val := lhs_val.(type) {
+	case *IntVal:
+		rhs_val, _ := rhs_val.(*IntVal)
+		return &BoolVal{val: lhs_val.val == rhs_val.val}
+	case *BoolVal:
+		rhs_val, _ := rhs_val.(*BoolVal)
+		return &BoolVal{val: lhs_val.val == rhs_val.val}
+	case *StringVal:
+		rhs_val, _ := rhs_val.(*StringVal)
+		return &BoolVal{val: lhs_val.val == rhs_val.val}
+	case *NoneVal:
+		return &BoolVal{val: true}
+	default:
+		panic(fmt.Sprint("Unsupported '==' between %s and %s"))
+	}
 }
 
 func (interpreter *ImpInterpreter) eval_NeqExpr(node NeqExpr) ImpValues {
 	lhs_val := interpreter.eval_Expr(node.lhs)
 	rhs_val := interpreter.eval_Expr(node.rhs)
-	return &BoolVal{val: lhs_val != rhs_val}
+	if !check_vals_type_equal(lhs_val, rhs_val) {
+		panic(fmt.Sprint("Unsupported '!=' between %s and %s"))
+	}
+	switch lhs_val := lhs_val.(type) {
+	case *IntVal:
+		rhs_val, _ := rhs_val.(*IntVal)
+		return &BoolVal{val: lhs_val.val != rhs_val.val}
+	case *BoolVal:
+		rhs_val, _ := rhs_val.(*BoolVal)
+		return &BoolVal{val: lhs_val.val != rhs_val.val}
+	case *StringVal:
+		rhs_val, _ := rhs_val.(*StringVal)
+		return &BoolVal{val: lhs_val.val != rhs_val.val}
+	case *NoneVal:
+		return &BoolVal{val: false}
+	default:
+		panic(fmt.Sprint("Unsupported '!=' between %s and %s"))
+	}
+}
+
+func (interpreter *ImpInterpreter) eval_LessthanExpr(node LessthanExpr) ImpValues {
+	lhs_val := interpreter.eval_Expr(node.lhs)
+	rhs_val := interpreter.eval_Expr(node.rhs)
+	lhs_intvar, lhs_is_int := lhs_val.(*IntVal)
+	rhs_intvar, rhs_is_int := rhs_val.(*IntVal)
+	if !(lhs_is_int && rhs_is_int) {
+		panic(fmt.Sprintf("Lessthan operator must be applied between two integer values"))
+	}
+	return &BoolVal{val: lhs_intvar.val < rhs_intvar.val}
+}
+
+func (interpreter *ImpInterpreter) eval_GreaterthanExpr(node GreaterthanExpr) ImpValues {
+	lhs_val := interpreter.eval_Expr(node.lhs)
+	rhs_val := interpreter.eval_Expr(node.rhs)
+	lhs_intvar, lhs_is_int := lhs_val.(*IntVal)
+	rhs_intvar, rhs_is_int := rhs_val.(*IntVal)
+	if !(lhs_is_int && rhs_is_int) {
+		panic(fmt.Sprintf("Greaterthan operator must be applied between two integer values"))
+	}
+	return &BoolVal{val: lhs_intvar.val > rhs_intvar.val}
+}
+
+func (interpreter *ImpInterpreter) eval_LeqExpr(node LeqExpr) ImpValues {
+	lhs_val := interpreter.eval_Expr(node.lhs)
+	rhs_val := interpreter.eval_Expr(node.rhs)
+	lhs_intvar, lhs_is_int := lhs_val.(*IntVal)
+	rhs_intvar, rhs_is_int := rhs_val.(*IntVal)
+	if !(lhs_is_int && rhs_is_int) {
+		panic(fmt.Sprintf("Leq operator must be applied between two integer values"))
+	}
+	return &BoolVal{val: lhs_intvar.val <= rhs_intvar.val}
+}
+
+func (interpreter *ImpInterpreter) eval_GeqExpr(node GeqExpr) ImpValues {
+	lhs_val := interpreter.eval_Expr(node.lhs)
+	rhs_val := interpreter.eval_Expr(node.rhs)
+	lhs_intvar, lhs_is_int := lhs_val.(*IntVal)
+	rhs_intvar, rhs_is_int := rhs_val.(*IntVal)
+	if !(lhs_is_int && rhs_is_int) {
+		panic(fmt.Sprintf("Geq operator must be applied between two integer values"))
+	}
+	return &BoolVal{val: lhs_intvar.val >= rhs_intvar.val}
 }
 
 func (interpreter *ImpInterpreter) eval_NotExpr(node NotExpr) ImpValues {
@@ -309,6 +387,8 @@ func (interpreter *ImpInterpreter) eval_Expr(node Expr) ImpValues {
 		return interpreter.eval_EqExpr(*node_ty)
 	case *NeqExpr:
 		return interpreter.eval_NeqExpr(*node_ty)
+	case *LessthanExpr:
+		return interpreter.eval_LessthanExpr(*node_ty)
 	case *NotExpr:
 		return interpreter.eval_NotExpr(*node_ty)
 	case *AndExpr:

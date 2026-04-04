@@ -57,6 +57,7 @@ func check_val_type_match(val ImpValues, _type ImpTypes) bool {
 	return false
 }
 
+// Get the ImpType of an ImpVal
 func get_type(val ImpValues) ImpTypes {
 	switch val_ty := val.(type) {
 	case *IntVal:
@@ -72,6 +73,11 @@ func get_type(val ImpValues) ImpTypes {
 	}
 }
 
+// Given two ImpVals, check if they have the same ImpType
+func check_vals_type_equal(val1 ImpValues, val2 ImpValues) bool {
+	return check_val_type_match(val1, get_type(val2))
+}
+
 ////////////////////////
 
 type ImpValues interface {
@@ -83,7 +89,7 @@ type IntVal struct {
 }
 
 func (val IntVal) String() string {
-	return val.String()
+	return fmt.Sprintf("%s", val.val)
 }
 
 func (*IntVal) isValue() {}
@@ -93,7 +99,7 @@ type BoolVal struct {
 }
 
 func (val BoolVal) String() string {
-	return val.String()
+	return fmt.Sprintf("%s", val.val)
 }
 
 func (*BoolVal) isValue() {}
@@ -104,7 +110,7 @@ type ArrayVal struct {
 }
 
 func (val ArrayVal) String() string {
-	return val.String()
+	return fmt.Sprintf("%s", val.val)
 }
 
 func (*ArrayVal) isValue() {}
@@ -304,6 +310,50 @@ func (*NeqExpr) isExpr() {}
 
 func (expr NeqExpr) String() string {
 	return fmt.Sprintf("%s != %s", expr.lhs, expr.rhs)
+}
+
+type LessthanExpr struct {
+	Node
+	lhs, rhs Expr
+}
+
+func (*LessthanExpr) isExpr() {}
+
+func (expr LessthanExpr) String() string {
+	return fmt.Sprintf("%s < %s", expr.lhs, expr.rhs)
+}
+
+type GreaterthanExpr struct {
+	Node
+	lhs, rhs Expr
+}
+
+func (*GreaterthanExpr) isExpr() {}
+
+func (expr GreaterthanExpr) String() string {
+	return fmt.Sprintf("%s > %s", expr.lhs, expr.rhs)
+}
+
+type LeqExpr struct {
+	Node
+	lhs, rhs Expr
+}
+
+func (*LeqExpr) isExpr() {}
+
+func (expr LeqExpr) String() string {
+	return fmt.Sprintf("%s <= %s", expr.lhs, expr.rhs)
+}
+
+type GeqExpr struct {
+	Node
+	lhs, rhs Expr
+}
+
+func (*GeqExpr) isExpr() {}
+
+func (expr GeqExpr) String() string {
+	return fmt.Sprintf("%s >= %s", expr.lhs, expr.rhs)
 }
 
 type NotExpr struct {
