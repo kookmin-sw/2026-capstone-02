@@ -14,6 +14,10 @@ type ImpState struct {
 // This designates the control flow result of executing statements
 type ControlflowResult int
 
+// ControlNormal: continue execution of statements as normal
+// ControlBreak: break from the current loop
+// ControlContinue: return to the loop head(continue) of the current loop
+// ControlReturn: return from the current function, stopping further execution of the function body
 const (
 	ControlNormal ControlflowResult = iota
 	ControlBreak
@@ -624,39 +628,39 @@ func (interpreter *ImpInterpreter) eval_ReturnStmt(node ReturnStmt) ControlflowR
 }
 
 // eval_Stmt evaluates a sequence of statements
-// The bool return type designates whether the function has returned, and hence execution of the sequence should stop
+// The ControlflowResult return type designates whether execution of statements should be affected
 func (interpreter *ImpInterpreter) eval_Stmt(nodes []Stmt) ControlflowResult {
-	var returned ControlflowResult = ControlNormal
+	var control_status ControlflowResult = ControlNormal
 	for _, stmt := range nodes {
 		switch stmt := stmt.(type) {
 		case *SkipStmt:
-			returned = interpreter.eval_SkipStmt(*stmt)
+			control_status = interpreter.eval_SkipStmt(*stmt)
 		case *AssignStmt:
-			returned = interpreter.eval_AssignStmt(*stmt)
+			control_status = interpreter.eval_AssignStmt(*stmt)
 		case *IfElseStmt:
-			returned = interpreter.eval_IfElseStmt(*stmt)
+			control_status = interpreter.eval_IfElseStmt(*stmt)
 		case *WhileStmt:
-			returned = interpreter.eval_WhileStmt(*stmt)
+			control_status = interpreter.eval_WhileStmt(*stmt)
 		case *BreakStmt:
-			returned = interpreter.eval_BreakStmt(*stmt)
+			control_status = interpreter.eval_BreakStmt(*stmt)
 		case *ContinueStmt:
-			returned = interpreter.eval_ContinueStmt(*stmt)
+			control_status = interpreter.eval_ContinueStmt(*stmt)
 		case *IncStmt:
-			returned = interpreter.eval_IncStmt(*stmt)
+			control_status = interpreter.eval_IncStmt(*stmt)
 		case *DecStmt:
-			returned = interpreter.eval_DecStmt(*stmt)
+			control_status = interpreter.eval_DecStmt(*stmt)
 		case *CallStmt:
-			returned = interpreter.eval_CallStmt(*stmt)
+			control_status = interpreter.eval_CallStmt(*stmt)
 		case *PrintStmt:
-			returned = interpreter.eval_PrintStmt(*stmt)
+			control_status = interpreter.eval_PrintStmt(*stmt)
 		case *ScanfStmt:
-			returned = interpreter.eval_ScanfStmt(*stmt)
+			control_status = interpreter.eval_ScanfStmt(*stmt)
 		case *ReturnStmt:
-			returned = interpreter.eval_ReturnStmt(*stmt)
+			control_status = interpreter.eval_ReturnStmt(*stmt)
 		}
-		if returned != ControlNormal {
-			return returned
+		if control_status != ControlNormal {
+			return control_status
 		}
 	}
-	return returned
+	return control_status
 }
