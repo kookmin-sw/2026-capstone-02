@@ -461,7 +461,7 @@ func (interpreter *ImpInterpreter) eval_Expr(node Expr) ImpValues {
 	case *LenExpr:
 		return interpreter.eval_LenExpr(*node_ty)
 	default:
-		panic(fmt.Sprintf("Line %d: Unimplemented expr type %s", node))
+		panic(fmt.Sprintf(" Unimplemented expr type %s", node))
 	}
 }
 
