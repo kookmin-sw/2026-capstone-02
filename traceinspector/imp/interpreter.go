@@ -202,6 +202,20 @@ func (interpreter *ImpInterpreter) eval_DivExpr(node DivExpr) ImpValues {
 	return &IntVal{Val: lhs_val.Val / rhs_val.Val}
 }
 
+func (interpreter *ImpInterpreter) eval_ModExpr(node ModExpr) ImpValues {
+	lhs_val, lhs_is_int := interpreter.eval_Expr(node.Lhs).(*IntVal)
+	rhs_val, rhs_is_int := interpreter.eval_Expr(node.Rhs).(*IntVal)
+
+	if !lhs_is_int {
+		panic(fmt.Sprintf("Line %d: LHS of modulus should be an int value, but got '%s'", node.Line_num, node.Lhs))
+	}
+
+	if !rhs_is_int {
+		panic(fmt.Sprintf("Line %d: RHS of modulus should be an int value, but got '%s'", node.Line_num, node.Rhs))
+	}
+	return &IntVal{Val: lhs_val.Val % rhs_val.Val}
+}
+
 func (interpreter *ImpInterpreter) eval_ParenExpr(node ParenExpr) ImpValues {
 	return interpreter.eval_Expr(node.Subexpr)
 }
@@ -434,6 +448,8 @@ func (interpreter *ImpInterpreter) eval_Expr(node Expr) ImpValues {
 		return interpreter.eval_MulExpr(*node_ty)
 	case *DivExpr:
 		return interpreter.eval_DivExpr(*node_ty)
+	case *ModExpr:
+		return interpreter.eval_ModExpr(*node_ty)
 	case *ParenExpr:
 		return interpreter.eval_ParenExpr(*node_ty)
 	case *ArrayIndexExpr:
@@ -574,7 +590,7 @@ func (interpreter *ImpInterpreter) eval_PrintStmt(node PrintStmt) ControlflowRes
 	var outputs []string
 	for _, arg := range node.Args {
 		arg_val := interpreter.eval_Expr(arg)
-		outputs = append(outputs, fmt.Sprintf("%s", arg_val))
+		outputs = append(outputs, strings.Replace(fmt.Sprintf("%s", arg_val), "\\n", "\n", 0))
 	}
 	fmt.Print(strings.Join(outputs, " "))
 	return ControlNormal

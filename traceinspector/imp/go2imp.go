@@ -58,7 +58,10 @@ func (nh *Go2ImpTranslator) translate_BasicLit(expr *ast.BasicLit) Expr {
 		}
 		return &IntLitExpr{Node: Node{nh.get_ast_linenum(expr)}, Value: i}
 	case token.STRING:
-		return &StringLitExpr{Node: nh.create_node_struct_from_ast(expr), Value: strings.Trim(strings.ReplaceAll(expr.Value, "\\n", "\n"), "\"")}
+		// str, _ := strconv.Unquote(expr.Value)
+		// return &StringLitExpr{Node: nh.create_node_struct_from_ast(expr), Value: str}
+		return &StringLitExpr{Node: nh.create_node_struct_from_ast(expr), Value: strings.Trim(expr.Value, "\"")}
+
 	default:
 		panic(fmt.Sprintf("go2imp translate_BasicLit: Unsupported literal '%s'", nodeString(expr)))
 	}
@@ -77,6 +80,8 @@ func (nh *Go2ImpTranslator) translate_BinaryExpr(expr *ast.BinaryExpr) Expr {
 		return &MulExpr{Node: node, Lhs: lhs_expr, Rhs: rhs_expr}
 	case token.QUO:
 		return &DivExpr{Node: node, Lhs: lhs_expr, Rhs: rhs_expr}
+	case token.REM:
+		return &ModExpr{Node: node, Lhs: lhs_expr, Rhs: rhs_expr}
 	case token.LAND:
 		return &AndExpr{Node: node, Lhs: lhs_expr, Rhs: rhs_expr}
 	case token.LOR:

@@ -305,6 +305,17 @@ func (expr DivExpr) String() string {
 	return fmt.Sprintf("%s / %s", expr.Lhs, expr.Rhs)
 }
 
+type ModExpr struct {
+	Node
+	Lhs, Rhs Expr
+}
+
+func (*ModExpr) isExpr() {}
+
+func (expr ModExpr) String() string {
+	return fmt.Sprintf("%s %% %s", expr.Lhs, expr.Rhs)
+}
+
 type ParenExpr struct {
 	Node
 	Subexpr Expr
@@ -569,7 +580,7 @@ type IncStmt struct {
 func (*IncStmt) isStmt() {}
 
 func (stmt IncStmt) String() string {
-	return fmt.Sprintf("%s++\n", stmt.Subexpr)
+	return fmt.Sprintf("%s++", stmt.Subexpr)
 }
 
 type DecStmt struct {
@@ -611,7 +622,7 @@ func (stmt PrintStmt) String() string {
 	for _, arg := range stmt.Args {
 		args = append(args, fmt.Sprintf("%s", arg))
 	}
-	return fmt.Sprintf("print(%s)\n", strings.Join(args, ", "))
+	return fmt.Sprintf("print(%s)", strings.Join(args, ", "))
 }
 
 type ScanfStmt struct {
@@ -627,7 +638,7 @@ func (stmt ScanfStmt) String() string {
 	for _, arg := range stmt.Assign_locations {
 		args = append(args, fmt.Sprintf("%s", arg))
 	}
-	return fmt.Sprintf("Scanf(%s, %s)\n", stmt.Format_string, strings.Join(args, ", "))
+	return fmt.Sprintf("Scanf(%s, %s)", stmt.Format_string, strings.Join(args, ", "))
 }
 
 type ReturnStmt struct {
