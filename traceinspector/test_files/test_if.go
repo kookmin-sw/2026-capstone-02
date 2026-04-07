@@ -10,7 +10,7 @@ func main() {
 	fmt.Scanf("%d", x)
 	if x < 0 {
 		x = -x + 100
-		fmt.Print("got negative")
+		fmt.Print("got negative\n")
 	} else {
 		x = -x
 	}

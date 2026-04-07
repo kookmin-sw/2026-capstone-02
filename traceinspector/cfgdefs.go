@@ -1,7 +1,6 @@
 package traceinspector
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -30,31 +29,25 @@ type CFGEdge struct {
 	Label        string
 }
 
-func (node *CFGNode) to_json() []byte {
-	out, err := json.Marshal(node)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to marshal CFG Node %s\n", node.Code))
+func (node *CFGNode) to_mermaind() string {
+	switch node.Node_type {
+	case node_basic:
+		return fmt.Sprintf("%d[\"`%s`\"]", node.Id, node.Code)
+	case node_cond:
+		return fmt.Sprintf("%d{\"`%s`\"}", node.Id, node.Code)
 	}
-	return out
+	return ""
 }
 
-func (node *CFGEdge) to_json() []byte {
-	out, err := json.Marshal(node)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to marshal CFG Edge %s\n", node.Label))
+func (node *CFGEdge) to_mermaind() string {
+	if node.Label == "" {
+		return fmt.Sprintf("%d --> %d", node.From_node_id, node.To_node_id)
+	} else {
+		return fmt.Sprintf("%d -- %s --> %d", node.From_node_id, node.Label, node.To_node_id)
 	}
-	return out
 }
 
 type CFGGraph struct {
 	Nodes []CFGNode
 	Edges []CFGEdge
-}
-
-func (cfg_graph *CFGGraph) to_json() []byte {
-	out, err := json.Marshal(cfg_graph)
-	if err != nil {
-		panic("Failed to marshal CFG graph")
-	}
-	return out
 }
