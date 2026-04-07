@@ -250,6 +250,11 @@ generates a CFG graph for every function defined in the file.
 ### CFG Mermaid format
 
 ```mermaid
+%% try this layout maybe?
+%% ---
+%% config:
+%%   layout: elk
+%% ---
 flowchart TD
 1["`print(#34;Done#34;, x)`"]
 2{"`i > 0`"}
@@ -285,6 +290,8 @@ flowchart TD
 14 --> 13
 ```
 
+### Imp Code output
+
 ```
 fun main() none {
         x = 0
@@ -315,5 +322,3 @@ fun main() none {
         print("Done", x)
 }
 ```
-
-### Imp Code output
