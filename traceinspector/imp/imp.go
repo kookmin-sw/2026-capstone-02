@@ -532,7 +532,7 @@ func (stmt IfElseStmt) String() string {
 		false_stmts = append(false_stmts, fmt.Sprintf("\t%s", stmt))
 		false_stmts[index] = strings.ReplaceAll(false_stmts[index], "\n", "\n\t")
 	}
-	return fmt.Sprintf("if %s {\n%s\n} else {\n%s\n}\n", stmt.Cond, strings.Join(true_stmts, "\n"), strings.Join(false_stmts, "\n"))
+	return fmt.Sprintf("if %s {\n%s\n} else {\n%s\n}", stmt.Cond, strings.Join(true_stmts, "\n"), strings.Join(false_stmts, "\n"))
 }
 
 type WhileStmt struct {
@@ -549,7 +549,7 @@ func (stmt WhileStmt) String() string {
 		substmts = append(substmts, fmt.Sprintf("\t%s", stmt))
 		substmts[index] = strings.ReplaceAll(substmts[index], "\n", "\n\t")
 	}
-	return fmt.Sprintf("while %s {\n%s\n}\n", stmt.Cond, strings.Join(substmts, "\n"))
+	return fmt.Sprintf("while %s {\n%s\n}", stmt.Cond, strings.Join(substmts, "\n"))
 }
 
 type BreakStmt struct {
@@ -591,7 +591,7 @@ type DecStmt struct {
 func (*DecStmt) isStmt() {}
 
 func (stmt DecStmt) String() string {
-	return fmt.Sprintf("%s--\n", stmt.Subexpr)
+	return fmt.Sprintf("%s--", stmt.Subexpr)
 }
 
 type CallStmt struct {
@@ -607,7 +607,7 @@ func (stmt CallStmt) String() string {
 	for _, arg := range stmt.Args {
 		args = append(args, fmt.Sprintf("%s", arg))
 	}
-	return fmt.Sprintf("%s(%s)\n", stmt.Func_name, strings.Join(args, ", "))
+	return fmt.Sprintf("%s(%s)", stmt.Func_name, strings.Join(args, ", "))
 }
 
 type PrintStmt struct {
@@ -649,5 +649,5 @@ type ReturnStmt struct {
 func (*ReturnStmt) isStmt() {}
 
 func (stmt ReturnStmt) String() string {
-	return fmt.Sprintf("return %s\n", stmt.Arg)
+	return fmt.Sprintf("return %s", stmt.Arg)
 }
