@@ -78,10 +78,18 @@ func (creator *CFGGraphCreator) pop_context() {
 	creator.cfg_context_stack = creator.cfg_context_stack[:len(creator.cfg_context_stack)-1]
 }
 
-func (graphcreator *CFGGraphCreator) create_cfg_node(code_string string, node_type node_types, line_num int) int {
+func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast *imp.Stmt, line_num int) int {
 	current_node_index := graphcreator.next_node_index
-	escaped_code := strings.ReplaceAll(code_string, "\"", "#34;")
-	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, CFGNode{Id: current_node_index, Code: escaped_code, Node_type: node_type, Line_num: line_num})
+	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", *imp_ast), "\"", "#34;")
+	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGNode{Id: current_node_index, Code: escaped_code, Node_type: node_basic, Line_num: line_num})
+	graphcreator.next_node_index++
+	return current_node_index
+}
+
+func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast *imp.Expr, line_num int) int {
+	current_node_index := graphcreator.next_node_index
+	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", *imp_ast), "\"", "#34;")
+	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGCondNode{Id: current_node_index, Code: escaped_code, Node_type: node_cond, Line_num: line_num})
 	graphcreator.next_node_index++
 	return current_node_index
 }
@@ -108,7 +116,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) int {
 	var created_node_id int = 0
 	switch stmt_ty := stmts[0].(type) {
 	case *imp.IfElseStmt:
-		cond_node_id := graphcreator.create_cfg_node(fmt.Sprintf("%s", stmt_ty.Cond), node_cond, stmt_ty.GetLineNum())
+		cond_node_id := graphcreator.create_cfg_cond_node(&stmt_ty.Cond, stmt_ty.GetLineNum())
 
 		graphcreator.push_branch_context(cond_node_id, next_node_id)
 
@@ -135,7 +143,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) int {
 		created_node_id = cond_node_id
 
 	case *imp.WhileStmt:
-		cond_node_id := graphcreator.create_cfg_node(fmt.Sprintf("%s", stmt_ty.Cond), node_cond, stmt_ty.GetLineNum())
+		cond_node_id := graphcreator.create_cfg_cond_node(&stmt_ty.Cond, stmt_ty.GetLineNum())
 
 		graphcreator.push_loop_context(cond_node_id, next_node_id)
 		body_node_id := graphcreator.create_cfg_method(stmt_ty.Body_stmt)
@@ -146,22 +154,22 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) int {
 		created_node_id = cond_node_id
 
 	case *imp.BreakStmt:
-		created_node_id = graphcreator.create_cfg_node("break", node_basic, stmt_ty.Line_num)
+		created_node_id = graphcreator.create_cfg_node(&stmts[0], stmt_ty.GetLineNum())
 		ctx := graphcreator.get_top_loop_context()
 		// link to loop exit
 		graphcreator.create_cfg_edge(created_node_id, ctx.exit_node_id, "")
 
 	case *imp.ContinueStmt:
-		created_node_id = graphcreator.create_cfg_node("continue", node_basic, stmt_ty.Line_num)
+		created_node_id = graphcreator.create_cfg_node(&stmts[0], stmt_ty.GetLineNum())
 		ctx := graphcreator.get_top_loop_context()
 		// link to loop head
 		graphcreator.create_cfg_edge(created_node_id, ctx.head_node_id, "")
 
 	case *imp.ReturnStmt:
-		created_node_id = graphcreator.create_cfg_node(fmt.Sprintf("%s", stmt_ty), node_basic, stmt_ty.Line_num)
+		created_node_id = graphcreator.create_cfg_node(&stmts[0], stmt_ty.GetLineNum())
 		// finish generation
 	default:
-		created_node_id = graphcreator.create_cfg_node(fmt.Sprintf("%s", stmt_ty), node_basic, stmt_ty.GetLineNum())
+		created_node_id = graphcreator.create_cfg_node(&stmts[0], stmt_ty.GetLineNum())
 		graphcreator.create_cfg_edge(created_node_id, next_node_id, "")
 
 	}
