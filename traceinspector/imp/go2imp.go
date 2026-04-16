@@ -19,6 +19,8 @@ func nodeString(n ast.Node) string {
 	return buf.String()
 }
 
+type ImpFunctionMap map[string]ImpFunction
+
 type Go2ImpTranslator struct {
 	fset *token.FileSet
 }
@@ -326,9 +328,9 @@ func (nh *Go2ImpTranslator) translate_Stmt(stmt ast.Stmt) []Stmt {
 	}
 }
 
-func Translate_ast_file_to_imp(go_input_file *ast.File, fset *token.FileSet) map[string]ImpFunction {
+func Translate_ast_file_to_imp(go_input_file *ast.File, fset *token.FileSet) ImpFunctionMap {
 	translator := Go2ImpTranslator{fset: fset}
-	output := make(map[string]ImpFunction)
+	output := make(ImpFunctionMap)
 	for _, decl := range go_input_file.Decls {
 		func_decl, is_func_decl := decl.(*ast.FuncDecl)
 		if is_func_decl {

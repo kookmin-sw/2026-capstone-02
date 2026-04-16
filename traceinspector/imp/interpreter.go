@@ -27,7 +27,7 @@ const (
 
 type ImpInterpreter struct {
 	States    []*ImpState // a stack of program states to represent scopes
-	Functions map[string]ImpFunction
+	Functions ImpFunctionMap
 }
 
 // Interpret Imp code starting from main()

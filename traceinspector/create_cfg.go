@@ -11,6 +11,7 @@ import (
 
 // if node id is leq 0, then the node doesn't exist
 type CFGGraphCreator struct {
+	func_name         string // name of the function
 	fset              *token.FileSet
 	Cfg_graph         *CFGGraph
 	next_node_index   int          // the next available node id
@@ -81,7 +82,7 @@ func (creator *CFGGraphCreator) pop_context() {
 func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast *imp.Stmt, line_num int) int {
 	current_node_index := graphcreator.next_node_index
 	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", *imp_ast), "\"", "#34;")
-	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGNode{Id: current_node_index, Code: escaped_code, Node_type: node_basic, Line_num: line_num})
+	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGNode{Id: CFGId{graphcreator.func_name, current_node_index}, Code: escaped_code, Node_type: node_basic, Line_num: line_num})
 	graphcreator.next_node_index++
 	return current_node_index
 }
@@ -89,7 +90,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast *imp.Stmt, line_num
 func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast *imp.Expr, line_num int) int {
 	current_node_index := graphcreator.next_node_index
 	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", *imp_ast), "\"", "#34;")
-	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGCondNode{Id: current_node_index, Code: escaped_code, Node_type: node_cond, Line_num: line_num})
+	graphcreator.Cfg_graph.Nodes = append(graphcreator.Cfg_graph.Nodes, &CFGCondNode{Id: CFGId{graphcreator.func_name, current_node_index}, Code: escaped_code, Node_type: node_cond, Line_num: line_num})
 	graphcreator.next_node_index++
 	return current_node_index
 }
@@ -97,7 +98,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast *imp.Expr, lin
 func (graphchreator *CFGGraphCreator) create_cfg_edge(from_id int, to_id int, label string) {
 	if from_id > 0 && to_id > 0 {
 		escaped_label := strings.ReplaceAll(label, "\"", "#34;")
-		graphchreator.Cfg_graph.Edges = append(graphchreator.Cfg_graph.Edges, CFGEdge{Id: graphchreator.next_edge_index, From_node_id: from_id, To_node_id: to_id, Label: escaped_label})
+		graphchreator.Cfg_graph.Edges = append(graphchreator.Cfg_graph.Edges, CFGEdge{Id: CFGId{graphchreator.func_name, graphchreator.next_edge_index}, From_node_id: from_id, To_node_id: to_id, Label: escaped_label})
 		graphchreator.next_edge_index++
 	}
 }
@@ -181,7 +182,7 @@ func Create_cfg(functions map[string]imp.ImpFunction) map[string]*CFGGraph {
 	var func_cfg_map map[string]*CFGGraph = make(map[string]*CFGGraph)
 	for fun_name, fun := range functions {
 		func_cfg_map[fun_name] = &CFGGraph{}
-		cfg_creator := CFGGraphCreator{Cfg_graph: func_cfg_map[fun_name], next_node_index: 1}
+		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_index: 1}
 		cfg_creator.create_cfg_method(fun.Body)
 	}
 	return func_cfg_map
@@ -199,11 +200,11 @@ func Print_mermaid(cfg *CFGGraph) {
 	// fmt.Println("```")
 	fmt.Println("flowchart TD")
 	for _, node := range cfg.Nodes {
-		fmt.Println(node.to_mermaind())
+		fmt.Println(node.To_mermaid())
 	}
 
 	for _, edge := range cfg.Edges {
-		fmt.Println(edge.to_mermaind())
+		fmt.Println(edge.To_mermaid())
 	}
 	// fmt.Println("```")
 }
