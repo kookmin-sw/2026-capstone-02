@@ -6,5 +6,3 @@ type AbstractDomain interface {
 	Widen(a1 AbstractDomain, a2 AbstractDomain) AbstractDomain // widening operator `a1 ▽ a2`
 	ToString() string                                          // return string representation of the domain value
 }
-
-type Bottom AbstractDomain
