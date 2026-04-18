@@ -1,18 +1,24 @@
 package traceinspector
 
-type AnalyzerInfoType int
-
-const (
-	AnalyzerJoin AnalyzerInfoType = iota
-	AnalyzerWiden
-	
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 )
 
-type AnalyzerStatusOutput interface {
-	isAnalyzerStatusOutput()
+type AnalyzerOutput struct {
+	Type          string
+	Function_name string
+	Node_id       int
+	Msg           string
 }
 
-type AnalyzerError struct {
-	info     string
-	line_num int
+func write_error(node_location CFGNodeLocation, msg string) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	enc.Encode(AnalyzerOutput{Type: "error", Function_name: node_location.Function_name, Node_id: node_location.Id, Msg: msg})
+	out := &bytes.Buffer{}
+	json.Compact(out, buf.Bytes())
+	fmt.Println(out.String())
 }
