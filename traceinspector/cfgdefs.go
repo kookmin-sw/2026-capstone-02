@@ -9,6 +9,9 @@ import (
 
 type node_types string
 
+type NodeID int
+type EdgeID int
+
 type CFGNodeClass interface {
 	is_CFGNodeClass()
 	To_mermaid() string
@@ -21,7 +24,7 @@ const (
 
 type CFGNodeLocation struct {
 	Function_name string
-	Id            int
+	Id            NodeID
 }
 
 type CFGNode struct {
@@ -40,10 +43,15 @@ type CFGCondNode struct {
 	Line_num  int
 }
 
+type CFGEdgeLocation struct {
+	Function_name string
+	Id            EdgeID
+}
+
 type CFGEdge struct {
-	Id           CFGNodeLocation
-	From_node_id int
-	To_node_id   int
+	Id           CFGEdgeLocation
+	From_node_id NodeID
+	To_node_id   NodeID
 	Label        string
 }
 
@@ -80,9 +88,9 @@ func (node *CFGEdge) To_mermaid() string {
 }
 
 type CFGGraph struct {
-	Node_map      map[int]CFGNodeClass // Map from node ID to node obj
-	Edge_map_from map[int][]*CFGEdge   // map from node ID to outgoing edge objs
-	Edge_map_to   map[int][]*CFGEdge   // map from node ID to incoming edge objs
+	Node_map      map[NodeID]CFGNodeClass // Map from node ID to node obj
+	Edge_map_from map[NodeID][]*CFGEdge   // map from node ID to outgoing edge objs
+	Edge_map_to   map[NodeID][]*CFGEdge   // map from node ID to incoming edge objs
 }
 
 func (m CFGGraph) MarshalJSON() ([]byte, error) {
