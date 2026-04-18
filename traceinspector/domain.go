@@ -1,10 +1,10 @@
 package traceinspector
 
-type AbstractDomain interface {
+type AbstractDomain[DomainImpl any] interface {
 	IsBot() bool
 	IsTop() bool
-	Incl(rhs AbstractDomain) bool            // inclusion operator `lhs ⊑ rhs`
-	Join(rhs AbstractDomain) AbstractDomain  // abstract join operator `lhs ⊔ rhs`
-	Widen(rhs AbstractDomain) AbstractDomain // widening operator `lhs ▽ rhs`
-	String() string                          // return string representation of the domain value
+	Incl(DomainImpl) bool        // inclusion operator `lhs ⊑ rhs`
+	Join(DomainImpl) DomainImpl  // abstract join operator `lhs ⊔ rhs`
+	Widen(DomainImpl) DomainImpl // widening operator `lhs ▽ rhs`
+	String() string              // return string representation of the domain value
 }
