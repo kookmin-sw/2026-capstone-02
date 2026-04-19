@@ -99,8 +99,22 @@ func (graphcreator *CFGGraphCreator) create_cfg_edge(from_id NodeID, to_id NodeI
 	if from_id > 0 && to_id > 0 {
 		escaped_label := strings.ReplaceAll(label, "\"", "#34;")
 		edge := CFGEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: from_id, To_node_id: to_id, Label: escaped_label}
-		graphcreator.Cfg_graph.Edge_map_from[from_id] = append(graphcreator.Cfg_graph.Edge_map_from[from_id], &edge)
+		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
 		graphcreator.Cfg_graph.Edge_map_to[to_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_id], &edge)
+		graphcreator.next_edge_id++
+	}
+}
+
+func (graphcreator *CFGGraphCreator) create_cfg_cond_edge(from_id NodeID, to_true_id NodeID, to_false_id NodeID) {
+	if from_id > 0 && (to_true_id > 0 || to_false_id > 0) {
+		edge := CFGCondEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: from_id, To_true_node_id: to_true_id, To_false_node_id: to_false_id}
+		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
+		if to_true_id > 0 {
+			graphcreator.Cfg_graph.Edge_map_to[to_true_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_true_id], &edge)
+		}
+		if to_false_id > 0 {
+			graphcreator.Cfg_graph.Edge_map_to[to_false_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_false_id], &edge)
+		}
 		graphcreator.next_edge_id++
 	}
 }
@@ -138,8 +152,9 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 		}
 
 		// create edges from cond to true/false start node
-		graphcreator.create_cfg_edge(cond_node_id, true_node_id, "True")
-		graphcreator.create_cfg_edge(cond_node_id, false_node_id, "False")
+		// graphcreator.create_cfg_edge(cond_node_id, true_node_id, "True")
+		// graphcreator.create_cfg_edge(cond_node_id, false_node_id, "False")
+		graphcreator.create_cfg_cond_edge(cond_node_id, true_node_id, false_node_id)
 
 		graphcreator.pop_context()
 
@@ -150,8 +165,9 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 
 		graphcreator.push_loop_context(cond_node_id, next_node_id)
 		body_node_id := graphcreator.create_cfg_method(stmt_ty.Body_stmt)
-		graphcreator.create_cfg_edge(cond_node_id, body_node_id, "True")
-		graphcreator.create_cfg_edge(cond_node_id, next_node_id, "False")
+		// graphcreator.create_cfg_edge(cond_node_id, body_node_id, "True")
+		// graphcreator.create_cfg_edge(cond_node_id, next_node_id, "False")
+		graphcreator.create_cfg_cond_edge(cond_node_id, body_node_id, next_node_id)
 		graphcreator.pop_context()
 
 		created_node_id = cond_node_id
@@ -183,7 +199,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 func Create_cfg(functions map[string]imp.ImpFunction) map[string]*CFGGraph {
 	var func_cfg_map map[string]*CFGGraph = make(map[string]*CFGGraph)
 	for fun_name, fun := range functions {
-		func_cfg_map[fun_name] = &CFGGraph{Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID][]*CFGEdge{}, Edge_map_to: map[NodeID][]*CFGEdge{}}
+		func_cfg_map[fun_name] = &CFGGraph{Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
 		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: 1}
 		cfg_creator.create_cfg_method(fun.Body)
 	}
