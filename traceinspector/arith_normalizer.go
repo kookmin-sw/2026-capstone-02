@@ -35,17 +35,17 @@ func zero_rhs(expr imp.Expr) (imp.Expr, error) {
 	}
 }
 
-// Represents a linear arithmetic polynomial ax ☉ by ☉ ... ☉ cz + C,
-// variable_expr: ax ☉ by ☉ ... ☉ cz
+// Represents a linear arithmetic Polynomial ax + by + ... + cz + C,
+// variable_expr: ax + by + ... + cz
 // constant: C
-type polynomial struct {
+type Polynomial struct {
 	variable_expr imp.Expr
 	constant      int
 }
 
 // Build the normalized polynomial representation of the integer expression
-func build_polynomial(expr imp.Expr) (polynomial, error) {
-	accumulated := polynomial{}
+func build_polynomial(expr imp.Expr) (Polynomial, error) {
+	accumulated := Polynomial{}
 	switch expr_ty := expr.(type) {
 	case *imp.VarExpr:
 		accumulated.variable_expr = expr_ty
@@ -64,11 +64,11 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.AddExpr:
 		lhs_poly, err := build_polynomial(expr_ty.Lhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		rhs_poly, err := build_polynomial(expr_ty.Rhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if lhs_poly.variable_expr == nil {
 			rhs_poly.constant += lhs_poly.constant
@@ -83,11 +83,11 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.SubExpr:
 		lhs_poly, err := build_polynomial(expr_ty.Lhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		rhs_poly, err := build_polynomial(expr_ty.Rhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if lhs_poly.variable_expr == nil {
 			rhs_poly.constant += lhs_poly.constant
@@ -103,11 +103,11 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 		// For the case of multiplication
 		lhs_poly, err := build_polynomial(expr_ty.Lhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		rhs_poly, err := build_polynomial(expr_ty.Rhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if lhs_poly.variable_expr == nil && rhs_poly.variable_expr == nil {
 			// both subexprs are constants
@@ -128,11 +128,11 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.DivExpr:
 		lhs_poly, err := build_polynomial(expr_ty.Lhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		rhs_poly, err := build_polynomial(expr_ty.Rhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if lhs_poly.variable_expr == nil && rhs_poly.variable_expr == nil {
 			accumulated.constant = lhs_poly.constant / rhs_poly.constant
@@ -142,11 +142,11 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.ModExpr:
 		lhs_poly, err := build_polynomial(expr_ty.Lhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		rhs_poly, err := build_polynomial(expr_ty.Rhs)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if lhs_poly.variable_expr == nil && rhs_poly.variable_expr == nil {
 			accumulated.constant = lhs_poly.constant % rhs_poly.constant
@@ -156,7 +156,7 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.NegExpr:
 		sub_poly, err := build_polynomial(expr_ty.Subexpr)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if sub_poly.variable_expr == nil {
 			accumulated.constant -= sub_poly.constant
@@ -167,7 +167,7 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 	case *imp.ParenExpr:
 		sub_poly, err := build_polynomial(expr_ty.Subexpr)
 		if err != nil {
-			return polynomial{}, err
+			return Polynomial{}, err
 		}
 		if sub_poly.variable_expr == nil {
 			accumulated.constant += sub_poly.constant
@@ -176,7 +176,7 @@ func build_polynomial(expr imp.Expr) (polynomial, error) {
 			accumulated.constant += accumulated.constant
 		}
 	default:
-		return polynomial{}, fmt.Errorf("build_polynomial: unsupported expressions %s", expr_ty)
+		return Polynomial{}, fmt.Errorf("build_polynomial: unsupported expressions %s", expr_ty)
 	}
 	return accumulated, nil
 }
