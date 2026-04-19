@@ -107,6 +107,7 @@ func (node *CFGEdge) To_mermaid() string {
 func (node *CFGCondEdge) is_CFGEdgeClass() {}
 
 type CFGGraph struct {
+	Entry_node    NodeID
 	Node_map      map[NodeID]CFGNodeClass   // Map from node ID to node obj
 	Edge_map_from map[NodeID]CFGEdgeClass   // map from node ID to outgoing edge objs
 	Edge_map_to   map[NodeID][]CFGEdgeClass // map from node ID to incoming edge objs

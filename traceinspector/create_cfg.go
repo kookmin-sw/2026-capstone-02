@@ -20,6 +20,9 @@ type CFGGraphCreator struct {
 
 }
 
+// Map from function names to CFGGraph
+type FunctionCFGMap map[string]*CFGGraph
+
 type CFGContext interface {
 	isCFGContext()
 }
@@ -196,17 +199,18 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 }
 
 // create and print the cfg into json
-func Create_cfg(functions map[string]imp.ImpFunction) map[string]*CFGGraph {
-	var func_cfg_map map[string]*CFGGraph = make(map[string]*CFGGraph)
+func Create_cfg(functions map[string]imp.ImpFunction) FunctionCFGMap {
+	var func_cfg_map FunctionCFGMap = make(FunctionCFGMap)
 	for fun_name, fun := range functions {
-		func_cfg_map[fun_name] = &CFGGraph{Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
-		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: 1}
+		var entry_node_id NodeID = 1
+		func_cfg_map[fun_name] = &CFGGraph{Entry_node: entry_node_id, Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
+		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: entry_node_id}
 		cfg_creator.create_cfg_method(fun.Body)
 	}
 	return func_cfg_map
 }
 
-func Print_cfg_map_json(cfgs map[string]*CFGGraph) {
+func Print_cfg_map_json(cfgs FunctionCFGMap) {
 	// result, _ := json.Marshal(func_cfg_map)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
