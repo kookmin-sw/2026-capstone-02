@@ -49,7 +49,7 @@ func (val AbstractValue[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]) get_arr
 type AbstractNodeMem[IntDomainImpl domain.AbstractDomain[IntDomainImpl], BoolDomainImpl domain.AbstractDomain[BoolDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] map[string]AbstractValue[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]
 
 // An abstract Memory state for a function holds a map from nodes to AbstractNodeMem
-// mem represents the memory state at the **entry, before executing the node**.
+// mem represents the memory state at the **entry of a node - before executing the node**.
 // the return value is also an abstraction of the possible return values
 type FunctionAbstractMem[IntDomainImpl domain.AbstractDomain[IntDomainImpl], BoolDomainImpl domain.AbstractDomain[BoolDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] struct {
 	mem           map[NodeID]AbstractNodeMem[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]
