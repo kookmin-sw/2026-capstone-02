@@ -4,12 +4,9 @@ import "fmt"
 
 // Abstract transition semantics for Imp wrt to arbitrary abstract domain impelmentations
 
-type ImpAbstractInterpreter[IntDomainImpl AbstractDomain[IntDomainImpl], BoolDomainImpl AbstractDomain[BoolDomainImpl], ArrayDomainImpl AbstractDomain[ArrayDomainImpl]] struct {
-	state FunctionAbstractMem[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]
-	cfg   CFGGraph
-}
+type ImpAbstractSemantics[IntDomainImpl AbstractDomain[IntDomainImpl], BoolDomainImpl AbstractDomain[BoolDomainImpl], ArrayDomainImpl AbstractDomain[ArrayDomainImpl]] struct{}
 
-func (interpreter *ImpAbstractInterpreter[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]) Step(in_state AbstractState[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]) []AbstractState[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl] {
+func (interpreter *ImpAbstractSemantics[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]) Step(in_state AbstractState[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl]) []AbstractState[IntDomainImpl, BoolDomainImpl, ArrayDomainImpl] {
 	cfg_node, cfg_node_exists := interpreter.cfg.Node_map[in_state.node_id]
 	if !cfg_node_exists {
 		write_error(create_empty_node_location(), fmt.Sprintf("The designated CFG Node %d doesn't exist", in_state.node_id))
