@@ -48,6 +48,19 @@ func _check_if_var(expr imp.Expr) (var_name string, is_negative bool) {
 	return
 }
 
+// Also verify that an expression is either a variable or a negation of it
+func _check_binary_expr(expr imp.Expr) (string, bool, string, bool) {
+	switch expr_ty := expr.(type) {
+	case *imp.AddExpr:
+		x_varname, x_is_neg := _check_if_var(expr_ty.Lhs)
+		y_varname, y_is_neg := _check_if_var(expr_ty.Rhs)
+		return x_varname, x_is_neg, y_varname, y_is_neg
+	case *imp.ParenExpr:
+		return _check_binary_expr(expr_ty.Subexpr)
+	}
+	return "", false, "", false
+}
+
 // Given an imp leq expression, try and convert the expression into a SimpleInequality.
 // Returns SimpleInequality, and a boolean indicating whether the conversion was possible.
 // Very naive and lazy implementation btw
@@ -69,15 +82,17 @@ func imp_expr_to_simp_inequality(expr imp.Expr) (SimpleInequality, bool) {
 		if err != nil {
 			return SimpleInequality{}, false
 		}
+
 		zero_expr_leq, is_leq_expr := zero_expr.(*imp.LeqExpr)
 		if !is_leq_expr {
 			return SimpleInequality{}, false
 		}
-		// pull the constant out of LHS by representing LHS as polynomial
+
+		// pull constants out of LHS by representing LHS as Polynomial struct
 		lhs_poly, err := build_polynomial(convert_subtraction_to_neg(zero_expr_leq.Lhs, false))
 		// fmt.Println(zero_expr_leq.Lhs, "||", lhs_poly.variable_expr, lhs_poly.constant)
 		created_ineq := SimpleInequality{}
-		created_ineq.constant = -lhs_poly.constant // sending it to other side of leq
+		created_ineq.constant = -lhs_poly.constant // send constant to other side of leq
 
 		// check if the polynomial is the form `±x + C`
 		single_varname, single_var_is_neg := _check_if_var(lhs_poly.variable_expr)
@@ -89,17 +104,8 @@ func imp_expr_to_simp_inequality(expr imp.Expr) (SimpleInequality, bool) {
 		}
 
 		// check if the polynomial is the form `±x ±y`
-		var x_varname, y_varname string
-		var x_is_neg, y_is_neg bool
-		switch poly_ty := lhs_poly.variable_expr.(type) {
-		case *imp.AddExpr:
-			x_varname, x_is_neg = _check_if_var(poly_ty.Lhs)
-			y_varname, y_is_neg = _check_if_var(poly_ty.Rhs)
-		case *imp.SubExpr:
-			x_varname, x_is_neg = _check_if_var(poly_ty.Lhs)
-			y_varname, y_is_neg = _check_if_var(poly_ty.Rhs)
-			y_is_neg = !y_is_neg
-		}
+		x_varname, x_is_neg, y_varname, y_is_neg := _check_binary_expr(lhs_poly.variable_expr)
+
 		if x_varname != "" && y_varname != "" {
 			created_ineq.x_varname = x_varname
 			created_ineq.x_is_pos = !x_is_neg

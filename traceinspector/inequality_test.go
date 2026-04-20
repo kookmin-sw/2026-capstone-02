@@ -1,7 +1,6 @@
 package traceinspector
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -26,8 +25,8 @@ func Test_inequality(t *testing.T) {
 				case token.EQL, token.NEQ, token.GEQ, token.LEQ, token.GTR, token.LSS:
 					original := translator.Translate_Expr(expr)
 					original, _ = zero_rhs(original)
-					new_expr, err := imp_expr_to_simp_inequality(original)
-					if err == true {
+					new_expr, safe := imp_expr_to_simp_inequality(original)
+					if safe {
 						t.Logf("ineq: %s -> %s\n", original, new_expr)
 					}
 				}
@@ -37,7 +36,7 @@ func Test_inequality(t *testing.T) {
 
 		file, err := parser.ParseFile(fset, gofile, nil, parser.ParseComments)
 		if err != nil {
-			fmt.Println("Error while parsing", gofile, "-", err)
+			t.Error("Error while parsing", gofile, "-", err)
 			return
 		}
 		ast.Inspect(file, runner)

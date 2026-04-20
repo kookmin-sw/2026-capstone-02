@@ -77,14 +77,17 @@ func convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
 	case *imp.ModExpr:
 		return &imp.ModExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.ParenExpr:
-		return &imp.ParenExpr{Node: expr_ty.Node, Subexpr: convert_subtraction_to_neg(expr_ty.Subexpr, false)}
+		// parenexpr does though
+		return &imp.ParenExpr{Node: expr_ty.Node, Subexpr: convert_subtraction_to_neg(expr_ty.Subexpr, negate)}
 	default:
 		return expr_ty
 	}
 }
 
-// Represents a linear arithmetic Polynomial ax + by + ... + cz + C,
-// variable_expr: ax + by + ... + cz
+// Represents a linear arithmetic Polynomial ax ⊙ by ⊙ ... ⊙ cz + C, where a, b, c are coefficient exprs
+// and x, y, z are addressible.
+//
+// variable_expr: ax ⊙ by ⊙ ... ⊙ cz
 // constant: C
 type Polynomial struct {
 	variable_expr imp.Expr
