@@ -27,7 +27,7 @@ func Test_inequality(t *testing.T) {
 					original, _ = zero_rhs(original)
 					new_expr, safe := imp_expr_to_simp_inequality(original)
 					if safe {
-						t.Logf("ineq: %s -> %s\n", original, new_expr)
+						t.Errorf("ineq: %s -> %s\n", original, new_expr)
 					}
 				}
 			}

@@ -70,12 +70,12 @@ func convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
 			return &imp.AddExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, true)}
 		}
 	case *imp.MulExpr:
-		// multiplication, division, remainder doesn't propogate parity
-		return &imp.MulExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		// multiplication, division should propogate sign to one of its arguments
+		return &imp.MulExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.DivExpr:
-		return &imp.DivExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		return &imp.DivExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.ModExpr:
-		return &imp.ModExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		return &imp.ModExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.ParenExpr:
 		// parenexpr does though
 		return &imp.ParenExpr{Node: expr_ty.Node, Subexpr: convert_subtraction_to_neg(expr_ty.Subexpr, negate)}

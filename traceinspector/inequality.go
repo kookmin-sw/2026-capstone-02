@@ -17,18 +17,18 @@ type SimpleInequality struct {
 }
 
 func (ieq SimpleInequality) String() string {
-	var x_parity string
-	var y_parity string = "+"
+	var x_sign string
+	var y_sign string = "+"
 	if !ieq.x_is_pos {
-		x_parity = "-"
+		x_sign = "-"
 	}
 	if !ieq.y_is_pos {
-		y_parity = "-"
+		y_sign = "-"
 	}
 	if ieq.y_exists {
-		return fmt.Sprintf("%s%s %s %s <= %d", x_parity, ieq.x_varname, y_parity, ieq.y_varname, ieq.constant)
+		return fmt.Sprintf("%s%s %s %s <= %d", x_sign, ieq.x_varname, y_sign, ieq.y_varname, ieq.constant)
 	} else {
-		return fmt.Sprintf("%s%s <= %d", x_parity, ieq.x_varname, ieq.constant)
+		return fmt.Sprintf("%s%s <= %d", x_sign, ieq.x_varname, ieq.constant)
 	}
 }
 
@@ -82,7 +82,6 @@ func imp_expr_to_simp_inequality(expr imp.Expr) (SimpleInequality, bool) {
 		if err != nil {
 			return SimpleInequality{}, false
 		}
-
 		zero_expr_leq, is_leq_expr := zero_expr.(*imp.LeqExpr)
 		if !is_leq_expr {
 			return SimpleInequality{}, false
@@ -90,7 +89,7 @@ func imp_expr_to_simp_inequality(expr imp.Expr) (SimpleInequality, bool) {
 
 		// pull constants out of LHS by representing LHS as Polynomial struct
 		lhs_poly, err := build_polynomial(convert_subtraction_to_neg(zero_expr_leq.Lhs, false))
-		// fmt.Println(zero_expr_leq.Lhs, "||", lhs_poly.variable_expr, lhs_poly.constant)
+		// fmt.Println(expr, "->", zero_expr_leq.Lhs, "->", convert_subtraction_to_neg(zero_expr_leq.Lhs, false), "||", lhs_poly.variable_expr, lhs_poly.constant)
 		created_ineq := SimpleInequality{}
 		created_ineq.constant = -lhs_poly.constant // send constant to other side of leq
 
