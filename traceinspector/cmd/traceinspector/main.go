@@ -78,5 +78,7 @@ func main() {
 	if just_interpret {
 		interpreter := imp.ImpInterpreter{Functions: imp_functions}
 		interpreter.Interpret_main()
+		return
 	}
+	traceinspector.Test(cfg_map, "main", imp_functions)
 }

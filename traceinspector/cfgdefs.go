@@ -31,6 +31,10 @@ func (loc CFGNodeLocation) String() string {
 	return fmt.Sprintf("Node %d @ function %s", loc.Id, loc.Function_name)
 }
 
+func (loc CFGNodeLocation) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprint(loc.Id)), nil
+}
+
 func create_empty_node_location() CFGNodeLocation {
 	return CFGNodeLocation{}
 }
@@ -80,6 +84,10 @@ type CFGEdgeLocation struct {
 	Id            EdgeID
 }
 
+func (loc CFGEdgeLocation) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprint(loc.Id)), nil
+}
+
 type CFGCondEdge struct {
 	Id               CFGEdgeLocation
 	From_node_id     CFGNodeLocation
@@ -102,16 +110,16 @@ func (node *CFGEdge) is_CFGEdgeClass() {}
 
 func (node *CFGEdge) To_mermaid() string {
 	if node.Label == "" {
-		return fmt.Sprintf("%d --> %d", node.From_node_id, node.To_node_id)
+		return fmt.Sprintf("%d --> %d", node.From_node_id.Id, node.To_node_id.Id)
 	} else {
-		return fmt.Sprintf("%d -- %s --> %d", node.From_node_id, node.Label, node.To_node_id)
+		return fmt.Sprintf("%d -- %s --> %d", node.From_node_id.Id, node.Label, node.To_node_id.Id)
 	}
 }
 
 func (node *CFGCondEdge) is_CFGEdgeClass() {}
 
 type CFGGraph struct {
-	Entry_node    NodeID
+	Entry_node    CFGNodeLocation
 	Node_map      map[NodeID]CFGNodeClass   // Map from node ID to node obj
 	Edge_map_from map[NodeID]CFGEdgeClass   // map from node ID to outgoing edge objs
 	Edge_map_to   map[NodeID][]CFGEdgeClass // map from node ID to incoming edge objs

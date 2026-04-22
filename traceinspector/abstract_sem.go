@@ -133,8 +133,12 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_
 func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(in_state AbstractState[IntDomainImpl, ArrayDomainImpl]) []AbstractState[IntDomainImpl, ArrayDomainImpl] {
 	cfg_node, cfg_node_exists := interpreter.func_cfg_map[interpreter.func_name].Node_map[in_state.node_location.Id]
 	if !cfg_node_exists {
-		write_error(create_empty_node_location(), fmt.Sprintf("The designated CFG Node %d doesn't exist", in_state.node_location))
+		write_error(create_empty_node_location(), fmt.Sprintf("The designated CFG Node %s doesn't exist", in_state.node_location))
 	}
+
+	// When we receive a new pair, update the global state with its join
+	interpreter.abstract_mem.mem[in_state.node_location.Id].Join_inplace(in_state.abstract_mem)
+
 	var return_states []AbstractState[IntDomainImpl, ArrayDomainImpl]
 	switch cfg_node := cfg_node.(type) {
 	case *CFGNode:
@@ -147,10 +151,16 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 				if var_exists {
 					// join here
 				} else {
+					fmt.Println(interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id])
 					in_state.abstract_mem[lhs_ty.Name] = rhs_val
 				}
 			}
+			switch outgoing_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(type) {
+			case *CFGEdge:
+				new_state := in_state.Clone()
+				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_id, abstract_mem: new_state.abstract_mem})
+			}
 		}
-	case *CFGCondNode:
 	}
+	return return_states
 }

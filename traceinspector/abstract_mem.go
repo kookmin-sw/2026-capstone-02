@@ -46,6 +46,20 @@ func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_array() ArrayDomain
 	return val.array_domain
 }
 
+func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) String() string {
+	switch val.domain_kind {
+	case InvalidKind:
+		return "INVALID"
+	case IntDomainKind:
+		return val.Get_int().String()
+	case BoolDomainKind:
+		return val.Get_bool().String()
+	case ArrayDomainKind:
+		return val.Get_array().String()
+	}
+	return ""
+}
+
 // AbstractNodeMem maps from variables to AbstractValue
 type AbstractNodeMem[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] map[string]AbstractValue[IntDomainImpl, ArrayDomainImpl]
 

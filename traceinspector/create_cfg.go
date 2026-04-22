@@ -202,10 +202,10 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 func Create_cfg(functions imp.ImpFunctionMap) FunctionCFGMap {
 	var func_cfg_map FunctionCFGMap = make(FunctionCFGMap)
 	for fun_name, fun := range functions {
-		var entry_node_id NodeID = 1
-		func_cfg_map[fun_name] = &CFGGraph{Entry_node: entry_node_id, Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
-		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: entry_node_id}
-		cfg_creator.create_cfg_method(fun.Body)
+		func_cfg_map[fun_name] = &CFGGraph{Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
+		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: 1}
+		entry_node_id := cfg_creator.create_cfg_method(fun.Body)
+		func_cfg_map[fun_name].Entry_node = CFGNodeLocation{Function_name: fun_name, Id: entry_node_id}
 	}
 	return func_cfg_map
 }

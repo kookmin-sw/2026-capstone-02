@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"traceinspector/algebra"
+	"traceinspector/imp"
 )
 
 //////////////////////////////////
@@ -76,6 +77,10 @@ func (lhs IntervalDomain) Widen(rhs IntervalDomain) IntervalDomain {
 	return IntervalDomain{lower: lower_val, upper: upper_val}
 }
 
+func (lhs IntervalDomain) From_IntLitExpr(expr imp.IntLitExpr) IntervalDomain {
+	return IntervalDomain{lower: algebra.ExtInt_Finite(expr.Value), upper: algebra.ExtInt_Finite(expr.Value)}
+}
+
 func (lhs IntervalDomain) Add(rhs IntervalDomain) IntervalDomain {
 	// [x1, x2] + [y1, y2] = [x1 + y1, x2 + y2]
 	if lhs.is_bottom || rhs.is_bottom {
@@ -99,4 +104,40 @@ func (lhs IntervalDomain) Mul(rhs IntervalDomain) IntervalDomain {
 	x2y1 := lhs.upper.Mul(rhs.lower)
 	x2y2 := lhs.upper.Mul(rhs.upper)
 	return IntervalDomain{lower: x1y1.Min(x1y2, x2y1, x2y2), upper: x1y1.Max(x1y2, x2y1, x2y2)}
+}
+
+func (lhs IntervalDomain) Div(rhs IntervalDomain) IntervalDomain {
+	return IntervalDomain{lower: algebra.ExtInt_NegInfty(), upper: algebra.ExtInt_Infty()}
+}
+
+func (lhs IntervalDomain) Mod(rhs IntervalDomain) IntervalDomain {
+	return IntervalDomain{lower: algebra.ExtInt_NegInfty(), upper: algebra.ExtInt_Infty()}
+}
+
+func (lhs IntervalDomain) Neg() IntervalDomain {
+	return IntervalDomain{lower: algebra.ExtInt_NegInfty(), upper: algebra.ExtInt_Infty()}
+}
+
+func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
+}
+
+func (lhs IntervalDomain) Neq(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
+}
+
+func (lhs IntervalDomain) Geq(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
+}
+
+func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
+}
+
+func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
+}
+
+func (lhs IntervalDomain) Lessthan(rhs IntervalDomain) BoolDomain {
+	return BoolDomain{val: true}
 }

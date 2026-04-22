@@ -26,5 +26,5 @@ type IntegerDomain[DomainImpl any] interface {
 	Greaterthan(DomainImpl) BoolDomain
 	Leq(DomainImpl) BoolDomain
 	Geq(DomainImpl) BoolDomain
-	Neg(DomainImpl) DomainImpl
+	Neg() DomainImpl
 }

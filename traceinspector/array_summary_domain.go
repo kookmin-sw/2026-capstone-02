@@ -66,3 +66,7 @@ func (lhs ArraySummaryDomain[ElemDomain]) Widen(rhs ArraySummaryDomain[ElemDomai
 }
 
 // expression evaluation
+
+func (arr ArraySummaryDomain[IntDomainImpl]) Index(val IntDomainImpl) AbstractValue[IntDomainImpl, ArraySummaryDomain[IntDomainImpl]] {
+	return AbstractValue[IntDomainImpl, ArraySummaryDomain[IntDomainImpl]]{domain_kind: IntDomainKind, int_domain: arr.val}
+}
