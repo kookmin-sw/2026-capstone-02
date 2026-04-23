@@ -9,8 +9,8 @@ import (
 	"traceinspector/imp"
 )
 
-func Test_inequality(t *testing.T) {
-	test_go_files, err := filepath.Glob("test_files/*.go")
+func Test_simpleprop(t *testing.T) {
+	test_go_files, err := filepath.Glob("../test_files/*.go")
 	if err != nil {
 		panic(err)
 	}
@@ -25,9 +25,11 @@ func Test_inequality(t *testing.T) {
 				case token.EQL, token.NEQ, token.GEQ, token.LEQ, token.GTR, token.LSS:
 					original := translator.Translate_Expr(expr)
 					original_zero, _ := zero_rhs(original)
-					new_expr, safe := imp_expr_to_simp_inequality(original_zero)
+					new_expr, safe := imp_expr_to_simple_prop(original_zero)
 					if safe {
-						t.Errorf("ineq: %s -> %s\n", original, new_expr)
+						t.Errorf("SimpleProp: %s -> %s\n", original, new_expr)
+					} else {
+						t.Errorf("SimpleProp: %s -> %s\n", original, new_expr)
 					}
 				}
 			}
