@@ -1,6 +1,8 @@
 package traceinspector
 
 import (
+	"fmt"
+	"strings"
 	"traceinspector/domain"
 	"traceinspector/imp"
 )
@@ -17,6 +19,20 @@ const (
 	ArrayDomainKind
 )
 
+func (dom_kind AbstractDomainKind) String() string {
+	switch dom_kind {
+	case InvalidKind:
+		return "InvalidDomainKind"
+	case IntDomainKind:
+		return "IntDomainKind"
+	case BoolDomainKind:
+		return "BoolDomainKind"
+	case ArrayDomainKind:
+		return "ArrayDomainKind"
+	}
+	panic("This should be unreachable")
+}
+
 // AbstractValue holds the abstract domain value for a variable
 type AbstractValue[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] struct {
 	domain_kind  AbstractDomainKind
@@ -27,7 +43,7 @@ type AbstractValue[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomai
 
 func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_int() IntDomainImpl {
 	if val.domain_kind != IntDomainKind {
-		panic("Attempted to get non-intkind abstractvalue as int")
+		panic(fmt.Sprintf("Attempted to get non-intkind(%s) abstractvalue as int", val.domain_kind))
 	}
 	return val.int_domain
 }
@@ -63,6 +79,14 @@ func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) String() string {
 // AbstractNodeMem maps from variables to AbstractValue
 type AbstractNodeMem[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] map[string]AbstractValue[IntDomainImpl, ArrayDomainImpl]
 
+func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) String() string {
+	var ret []string
+	for key, val := range node_mem {
+		ret = append(ret, fmt.Sprintf("%s : %s", key, val))
+	}
+	return "{" + strings.Join(ret, ", ") + "}"
+}
+
 func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Clone() AbstractNodeMem[IntDomainImpl, ArrayDomainImpl] {
 	new_mem := make(AbstractNodeMem[IntDomainImpl, ArrayDomainImpl])
 	for key, val := range node_mem {
@@ -89,35 +113,55 @@ func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Join_inplace(oth
 			joined.domain_kind = original_val.domain_kind
 			switch joined.domain_kind {
 			case IntDomainKind:
-				joined.int_domain = original_val.Get_int().Clone()
+				joined.int_domain = original_val.Get_int().Clone().Join(val.Get_int())
 			case BoolDomainKind:
-				joined.bool_domain = original_val.Get_bool().Clone()
+				joined.bool_domain = original_val.Get_bool().Clone().Join(val.Get_bool())
 			case ArrayDomainKind:
-				joined.array_domain = original_val.Get_array().Clone()
+				joined.array_domain = original_val.Get_array().Clone().Join(val.Get_array())
 			}
-		}
-		switch val.domain_kind {
-		case IntDomainKind:
-			joined.int_domain = joined.Get_int().Join(val.Get_int())
-		case BoolDomainKind:
-			joined.bool_domain = joined.Get_bool().Join(val.Get_bool())
-		case ArrayDomainKind:
-			joined.array_domain = joined.Get_array().Join(val.Get_array())
+		} else {
+			joined.domain_kind = val.domain_kind
+			switch joined.domain_kind {
+			case IntDomainKind:
+				joined.int_domain = val.Get_int()
+			case BoolDomainKind:
+				joined.bool_domain = val.Get_bool()
+			case ArrayDomainKind:
+				joined.array_domain = val.Get_array()
+			}
 		}
 		node_mem[key] = joined
 	}
 }
 
+type NodeAbstractMemMap[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] map[NodeID]AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]
+
+func (mem_map NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl]) String() string {
+	var ret []string
+	for key, val := range mem_map {
+		ret = append(ret, fmt.Sprintf("%d : %s", key, val))
+	}
+	return "{" + strings.Join(ret, ", ") + "}"
+}
+
 // An abstract Memory state for a function holds a map from nodes to AbstractNodeMem
-// mem represents the memory state at the **entry of a node - before executing the node**.
+// pre_mem represents the memory state at the **entry of a node - before executing the node**.
 // the return value is also an abstraction of the possible return values
 type FunctionAbstractMem[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] struct {
-	mem           map[NodeID]AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]
+	pre_mem       NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl]
 	function_name imp.ImpFunctionName
 	return_value  AbstractValue[IntDomainImpl, ArrayDomainImpl]
 }
 
-func (func_mem *FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]) Initialize(function_name imp.ImpFunctionName) {
-	func_mem.mem = make(map[NodeID]AbstractNodeMem[IntDomainImpl, ArrayDomainImpl])
+func (func_mem FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]) String() string {
+	return fmt.Sprintf("%s : %s, returns %s", func_mem.function_name, func_mem.pre_mem, func_mem.return_value)
+}
+
+func (func_mem *FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]) Initialize(function_name imp.ImpFunctionName, function_cfg *CFGGraph) {
+	func_mem.pre_mem = make(NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl])
 	func_mem.function_name = function_name
+	for node_id := range function_cfg.Node_map {
+		func_mem.pre_mem[node_id] = make(AbstractNodeMem[IntDomainImpl, ArrayDomainImpl])
+	}
+	func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
 }

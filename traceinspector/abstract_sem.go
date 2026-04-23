@@ -2,13 +2,10 @@ package traceinspector
 
 import (
 	"fmt"
+	"strings"
 	"traceinspector/domain"
 	"traceinspector/imp"
 )
-
-type AnalyzerSettings struct {
-	loop_iters_before_widening int
-}
 
 // An AbstractState is the pair (l, M^#) ↪ (l', M^#') used in the abstract transition relation
 // node_location: node location to be interpreted
@@ -16,6 +13,14 @@ type AnalyzerSettings struct {
 type AbstractState[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl ArrayDomain[IntDomainImpl, ArrayDomainImpl]] struct {
 	node_location CFGNodeLocation
 	abstract_mem  AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]
+}
+
+func (state AbstractState[IntDomainImpl, ArrayDomainImpl]) String() string {
+	var ret []string
+	for key, val := range state.abstract_mem {
+		ret = append(ret, fmt.Sprintf("%s : %s", key, val))
+	}
+	return fmt.Sprintf("%s - {%s}", state.node_location, strings.Join(ret, ", "))
 }
 
 func (state AbstractState[IntDomainImpl, ArrayDomainImpl]) Clone() AbstractState[IntDomainImpl, ArrayDomainImpl] {
@@ -137,7 +142,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 	}
 
 	// When we receive a new pair, update the global state with its join
-	interpreter.abstract_mem.mem[in_state.node_location.Id].Join_inplace(in_state.abstract_mem)
+	interpreter.abstract_mem.pre_mem[in_state.node_location.Id].Join_inplace(in_state.abstract_mem)
 
 	var return_states []AbstractState[IntDomainImpl, ArrayDomainImpl]
 	switch cfg_node := cfg_node.(type) {
@@ -149,14 +154,27 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 			case *imp.VarExpr:
 				_, var_exists := in_state.abstract_mem[lhs_ty.Name]
 				if var_exists {
-					// join here
+					if in_state.abstract_mem[lhs_ty.Name].domain_kind != rhs_val.domain_kind {
+						write_error(in_state.node_location, "LHS and RHS donain type does not match")
+						return nil
+					}
+					switch rhs_val.domain_kind {
+					case InvalidKind:
+						write_error(in_state.node_location, fmt.Sprintf("Got Invalid domain kind for RHS %s", stmt.Rhs))
+					case IntDomainKind:
+						in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: in_state.abstract_mem[lhs_ty.Name].Get_int().Join(rhs_val.Get_int())}
+					case BoolDomainKind:
+						in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: in_state.abstract_mem[lhs_ty.Name].Get_bool().Join(rhs_val.Get_bool())}
+					case ArrayDomainKind:
+						in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: in_state.abstract_mem[lhs_ty.Name].Get_array().Join(rhs_val.Get_array())}
+					}
 				} else {
-					fmt.Println(interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id])
 					in_state.abstract_mem[lhs_ty.Name] = rhs_val
 				}
 			}
 			switch outgoing_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(type) {
 			case *CFGEdge:
+				fmt.Printf("adding outgoing edge %s to return state\n", outgoing_edge)
 				new_state := in_state.Clone()
 				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_id, abstract_mem: new_state.abstract_mem})
 			}

@@ -28,7 +28,7 @@ type CFGNodeLocation struct {
 }
 
 func (loc CFGNodeLocation) String() string {
-	return fmt.Sprintf("Node %d @ function %s", loc.Id, loc.Function_name)
+	return fmt.Sprintf("Node %d @ func %s", loc.Id, loc.Function_name)
 }
 
 func (loc CFGNodeLocation) MarshalJSON() ([]byte, error) {
@@ -84,6 +84,10 @@ type CFGEdgeLocation struct {
 	Id            EdgeID
 }
 
+func (loc CFGEdgeLocation) String() string {
+	return fmt.Sprintf("Edge %d @ func %s", loc.Id, loc.Function_name)
+}
+
 func (loc CFGEdgeLocation) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprint(loc.Id)), nil
 }
@@ -95,11 +99,19 @@ type CFGCondEdge struct {
 	To_false_node_id CFGNodeLocation
 }
 
+func (edge CFGCondEdge) String() string {
+	return fmt.Sprintf("(%s){true : %s -> %s, false : %s -> %s}", edge.Id, edge.From_node_id, edge.To_true_node_id, edge.From_node_id, edge.To_false_node_id)
+}
+
 type CFGEdge struct {
 	Id           CFGEdgeLocation
 	From_node_id CFGNodeLocation
 	To_node_id   CFGNodeLocation
 	Label        string
+}
+
+func (edge CFGEdge) String() string {
+	return fmt.Sprintf("(%s){%s -> %s}", edge.Id, edge.From_node_id, edge.To_node_id)
 }
 
 type CFGEdgeClass interface {
