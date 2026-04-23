@@ -38,7 +38,7 @@ func zero_rhs(expr imp.Expr) (imp.Expr, error) {
 
 // --e -> e
 // e - e -> e + -e
-// Given an intege expression, convert all subtraction into addition, and simplify any double negations
+// Given an integer expression, convert all subtraction into addition, and simplify any double negations
 func convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
 	switch expr_ty := expr.(type) {
 	case *imp.VarExpr, *imp.ArrayIndexExpr, *imp.LenExpr:
