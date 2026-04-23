@@ -157,31 +157,24 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 				_, var_exists := in_state.abstract_mem[lhs_ty.Name]
 				if var_exists {
 					if in_state.abstract_mem[lhs_ty.Name].domain_kind != rhs_val.domain_kind {
-						write_error(in_state.node_location, "LHS and RHS donain type does not match")
+						write_error(in_state.node_location, "LHS and RHS domain type does not match")
 						return nil
 					}
-					in_state.abstract_mem[lhs_ty.Name] = rhs_val
-					// switch rhs_val.domain_kind {
-					// case InvalidKind:
-					// 	write_error(in_state.node_location, fmt.Sprintf("Got Invalid domain kind for RHS %s", stmt.Rhs))
-					// 	return nil
-					// case IntDomainKind:
-					// 	in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: in_state.abstract_mem[lhs_ty.Name].Get_int().Join(rhs_val.Get_int())}
-					// case BoolDomainKind:
-					// 	in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: in_state.abstract_mem[lhs_ty.Name].Get_bool().Join(rhs_val.Get_bool())}
-					// case ArrayDomainKind:
-					// 	in_state.abstract_mem[lhs_ty.Name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: in_state.abstract_mem[lhs_ty.Name].Get_array().Join(rhs_val.Get_array())}
-					// }
-				} else {
-					in_state.abstract_mem[lhs_ty.Name] = rhs_val
 				}
+				in_state.abstract_mem[lhs_ty.Name] = rhs_val
 			}
-			switch outgoing_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(type) {
-			case *CFGEdge:
-				new_state := in_state.Clone()
-				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_id, abstract_mem: new_state.abstract_mem})
-			}
+
+		case *imp.SkipStmt:
+			// do nothing
+		case *imp.IfElseStmt:
+
 		}
+	}
+	switch outgoing_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(type) {
+	case *CFGEdge:
+		new_state := in_state.Clone()
+		return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_id, abstract_mem: new_state.abstract_mem})
+		// handle condition edges within their respective stmt handling
 	}
 	return return_states
 }
