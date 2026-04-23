@@ -167,6 +167,22 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		case *imp.SkipStmt:
 			// do nothing
 		case *imp.IfElseStmt:
+			// If at in_state the prop evaluates to either true or false,
+			// We can just execute only the corresponding branch.
+			// Otherwise filter for each branch and join the result
+			cond_val := interpreter.Eval_expr(in_state.node_location, stmt.Cond, in_state.abstract_mem)
+			if cond_val.Get_bool().IsTop() {
+				// run both branches
+			} else if cond_val.Get_bool().IsBot() {
+				// No bool value possible - dead branch
+				return nil
+			} else {
+				if cond_val.Get_bool().IsTrue() {
+					// run just the true branch on filter_true(in_state)
+				} else {
+					// run just the false branch on filter_false(in_state)
+				}
+			}
 
 		}
 	}
