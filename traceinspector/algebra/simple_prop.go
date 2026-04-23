@@ -35,6 +35,18 @@ const (
 	SimplePropCoeff_positive
 )
 
+func (coeff SimplePropCoeff) Negate() SimplePropCoeff {
+	switch coeff {
+	case SimplePropCoeff_zero:
+		return SimplePropCoeff_zero
+	case SimplePropCoeff_negative:
+		return SimplePropCoeff_positive
+	case SimplePropCoeff_positive:
+		return SimplePropCoeff_negative
+	}
+	panic("Negate(): this should never happen(cosmic ray bitflip)")
+}
+
 func (ieq SimpleProp) String() string {
 	var x_sign, y_sign, prop_op string
 
@@ -100,7 +112,7 @@ func _check_binary_expr(expr imp.Expr) (imp.Expr, SimplePropCoeff, imp.Expr, Sim
 }
 
 // given a LHS expr of a integer prop, try to convert the expr into the SimpleProp of the prop_type
-func convert_lhs_to_simple_prop(prop_type SimplePropType, lhs imp.Expr) (SimpleProp, bool) {
+func _convert_lhs_to_simple_prop(prop_type SimplePropType, lhs imp.Expr) (SimpleProp, bool) {
 	// pull constants out of LHS by representing LHS as Polynomial struct
 	lhs_poly, err := build_polynomial(convert_subtraction_to_neg(lhs, false))
 	if err != nil {
@@ -157,7 +169,7 @@ func imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
 		if !is_leq_expr {
 			return SimpleProp{}, false
 		}
-		return convert_lhs_to_simple_prop(SimplePropType_Leq, zero_expr_leq.Lhs)
+		return _convert_lhs_to_simple_prop(SimplePropType_Leq, zero_expr_leq.Lhs)
 
 	case *imp.EqExpr:
 		zero_expr, err := zero_rhs(expr)
@@ -169,7 +181,7 @@ func imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
 			return SimpleProp{}, false
 		}
 
-		return convert_lhs_to_simple_prop(SimplePropType_Eq, zero_expr_eq.Lhs)
+		return _convert_lhs_to_simple_prop(SimplePropType_Eq, zero_expr_eq.Lhs)
 	case *imp.NeqExpr:
 		zero_expr, err := zero_rhs(expr)
 		if err != nil {
@@ -180,7 +192,29 @@ func imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
 			return SimpleProp{}, false
 		}
 
-		return convert_lhs_to_simple_prop(SimplePropType_Neq, zero_expr_neq.Lhs)
+		return _convert_lhs_to_simple_prop(SimplePropType_Neq, zero_expr_neq.Lhs)
 	}
 	return SimpleProp{}, false
 }
+
+func (sp SimpleProp) Negate() SimpleProp {
+	switch sp.prop_type {
+	case SimplePropType_Eq:
+		sp.prop_type = SimplePropType_Neq
+	case SimplePropType_Neq:
+		sp.prop_type = SimplePropType_Eq
+	case SimplePropType_Leq:
+		// !(±x ±y <= C) = ±x ±y > C = ±x ±y >= C + 1 = ∓x ∓y <= -C - 1
+		return SimpleProp{
+			prop_type: SimplePropType_Leq,
+			x_expr:    sp.x_expr,
+			x_coeff:   sp.x_coeff.Negate(),
+			y_expr:    sp.y_expr,
+			y_coeff:   sp.y_coeff.Negate(),
+			constant:  -sp.constant - 1,
+		}
+	}
+	return sp
+}
+
+func (sp SimpleProp) Filter_True_on_Expr(expr imp.Expr)
