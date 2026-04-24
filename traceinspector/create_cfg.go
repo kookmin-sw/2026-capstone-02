@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/token"
 	"os"
-	"strings"
 	"traceinspector/imp"
 )
 
@@ -84,24 +83,21 @@ func (creator *CFGGraphCreator) pop_context() {
 
 func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast imp.Stmt, line_num int) NodeID {
 	current_node_index := graphcreator.next_node_id
-	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", imp_ast), "\"", "#34;")
-	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGNode{Ast: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: escaped_code, Node_type: node_basic, Line_num: line_num}
+	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGNode{Ast: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_basic, Line_num: line_num}
 	graphcreator.next_node_id++
 	return current_node_index
 }
 
 func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast imp.Expr, line_num int) NodeID {
 	current_node_index := graphcreator.next_node_id
-	escaped_code := strings.ReplaceAll(fmt.Sprintf("%s", imp_ast), "\"", "#34;")
-	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Ast: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: escaped_code, Node_type: node_cond, Line_num: line_num}
+	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Cond_expr: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_cond, Line_num: line_num}
 	graphcreator.next_node_id++
 	return current_node_index
 }
 
 func (graphcreator *CFGGraphCreator) create_cfg_edge(from_id NodeID, to_id NodeID, label string) {
 	if from_id > 0 && to_id > 0 {
-		escaped_label := strings.ReplaceAll(label, "\"", "#34;")
-		edge := CFGEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: from_id, To_node_id: to_id, Label: escaped_label}
+		edge := CFGEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_loc: CFGNodeLocation{graphcreator.func_name, from_id}, To_node_loc: CFGNodeLocation{graphcreator.func_name, to_id}, Label: label}
 		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
 		graphcreator.Cfg_graph.Edge_map_to[to_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_id], &edge)
 		graphcreator.next_edge_id++
@@ -110,7 +106,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_edge(from_id NodeID, to_id NodeI
 
 func (graphcreator *CFGGraphCreator) create_cfg_cond_edge(from_id NodeID, to_true_id NodeID, to_false_id NodeID) {
 	if from_id > 0 && (to_true_id > 0 || to_false_id > 0) {
-		edge := CFGCondEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: from_id, To_true_node_id: to_true_id, To_false_node_id: to_false_id}
+		edge := CFGCondEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_loc: CFGNodeLocation{graphcreator.func_name, from_id}, To_true_node_loc: CFGNodeLocation{graphcreator.func_name, to_true_id}, To_false_node_loc: CFGNodeLocation{graphcreator.func_name, to_false_id}}
 		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
 		if to_true_id > 0 {
 			graphcreator.Cfg_graph.Edge_map_to[to_true_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_true_id], &edge)
@@ -202,10 +198,10 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 func Create_cfg(functions imp.ImpFunctionMap) FunctionCFGMap {
 	var func_cfg_map FunctionCFGMap = make(FunctionCFGMap)
 	for fun_name, fun := range functions {
-		var entry_node_id NodeID = 1
-		func_cfg_map[fun_name] = &CFGGraph{Entry_node: entry_node_id, Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
-		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: entry_node_id}
-		cfg_creator.create_cfg_method(fun.Body)
+		func_cfg_map[fun_name] = &CFGGraph{Node_map: make(map[NodeID]CFGNodeClass), Edge_map_from: map[NodeID]CFGEdgeClass{}, Edge_map_to: map[NodeID][]CFGEdgeClass{}}
+		cfg_creator := CFGGraphCreator{func_name: fun_name, Cfg_graph: func_cfg_map[fun_name], next_node_id: 1}
+		entry_node_id := cfg_creator.create_cfg_method(fun.Body)
+		func_cfg_map[fun_name].Entry_node = CFGNodeLocation{Function_name: fun_name, Id: entry_node_id}
 	}
 	return func_cfg_map
 }

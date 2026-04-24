@@ -121,7 +121,7 @@ func Test_convert_subtraction(t *testing.T) {
 					case *imp.GreaterthanExpr:
 						original = original_ty.Lhs
 					}
-					new_expr := convert_subtraction_to_neg(original, false)
+					new_expr := Convert_subtraction_to_neg(original, false)
 					t.Logf("convert subtraction: %s -> %s\n", original, new_expr)
 				}
 			}

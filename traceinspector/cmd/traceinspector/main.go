@@ -66,6 +66,7 @@ func main() {
 			fmt.Println("----------------")
 			traceinspector.Print_mermaid(fun_cfg)
 		}
+		return
 	}
 
 	if just_print_imp {
@@ -78,5 +79,7 @@ func main() {
 	if just_interpret {
 		interpreter := imp.ImpInterpreter{Functions: imp_functions}
 		interpreter.Interpret_main()
+		return
 	}
+	traceinspector.Test(cfg_map, "main", imp_functions)
 }
