@@ -6,22 +6,26 @@ import (
 	"traceinspector/imp"
 )
 
+type AnalysisSettings struct {
+	Loop_iters_before_Widening int // number of loop interations before widening
+}
+
 // This is the main struct for driving abstract interpretation.
 type AbstractAnalyzer[IntDom domain.IntegerDomain[IntDom], ArrDom ArrayDomain[IntDom, ArrDom]] struct {
 	Function_cfgs         FunctionCFGMap
 	Function_defs         imp.ImpFunctionMap
-	Create_semantics_func func(*FunctionAbstractMem[IntDom, ArrDom], imp.ImpFunctionName) AbstractSemantics[IntDom, ArrDom]
-	function_pre_mem_map  map[imp.ImpFunctionName]*FunctionAbstractMem[IntDom, ArrDom] // map from function name to pre-states
+	Create_semantics_func func(*AbstractFunctionMem[IntDom, ArrDom], imp.ImpFunctionName) AbstractSemantics[IntDom, ArrDom]
+	function_pre_mem_map  map[imp.ImpFunctionName]*AbstractFunctionMem[IntDom, ArrDom] // map from function name to pre-states
 }
 
 func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Start_analysis(function_name imp.ImpFunctionName) {
-	analyzer.function_pre_mem_map = make(map[imp.ImpFunctionName]*FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl])
-	analyzer.function_pre_mem_map[function_name] = &FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]{}
+	analyzer.function_pre_mem_map = make(map[imp.ImpFunctionName]*AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl])
+	analyzer.function_pre_mem_map[function_name] = &AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]{}
 	analyzer.function_pre_mem_map[function_name].Initialize(function_name, analyzer.Function_cfgs[function_name])
 
 	semantics := analyzer.Create_semantics_func(analyzer.function_pre_mem_map[function_name], function_name)
 
-	initial_state := AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: analyzer.Function_cfgs[function_name].Entry_node, abstract_mem: make(AbstractNodeMem[IntDomainImpl, ArrayDomainImpl])}
+	initial_state := AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: analyzer.Function_cfgs[function_name].Entry_node, abstract_mem: make(AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl])}
 	worklist := []AbstractState[IntDomainImpl, ArrayDomainImpl]{initial_state}
 	for len(worklist) > 0 {
 		front_val := worklist[0]
@@ -35,15 +39,16 @@ func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Start_analysis
 }
 
 func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_map imp.ImpFunctionMap) {
-	create_sem := func(func_mem *FunctionAbstractMem[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]], func_name imp.ImpFunctionName) AbstractSemantics[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]] {
+	create_sem := func(func_mem *AbstractFunctionMem[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]], func_name imp.ImpFunctionName) AbstractSemantics[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]] {
 		return &ImpFunctionInterpreter[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]]{
-			func_cfg_map:        func_cfg_map,
-			func_name:           func_name,
-			func_info_map:       func_info_map,
-			abstract_mem:        func_mem,
-			intdomain_default:   domain.IntervalDomain{},
-			booldomain_default:  domain.BoolDomain{},
-			arraydomain_default: ArraySummaryDomain[domain.IntervalDomain]{},
+			func_cfg_map:          func_cfg_map,
+			func_name:             func_name,
+			func_info_map:         func_info_map,
+			abstract_function_mem: func_mem,
+			intdomain_default:     domain.IntervalDomain{},
+			booldomain_default:    domain.BoolDomain{},
+			arraydomain_default:   ArraySummaryDomain[domain.IntervalDomain]{},
+			settings:              AnalysisSettings{Loop_iters_before_Widening: 5},
 		}
 	}
 	g := AbstractAnalyzer[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]]{Function_cfgs: func_cfg_map, Function_defs: func_info_map, Create_semantics_func: create_sem}
@@ -52,7 +57,7 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 	for key, val := range g.function_pre_mem_map {
 		fmt.Println("---------")
 		fmt.Println(key)
-		for nid, nval := range val.pre_mem {
+		for nid, nval := range val.pre_mem_node_map {
 			fmt.Println(nid, ":", nval)
 		}
 	}

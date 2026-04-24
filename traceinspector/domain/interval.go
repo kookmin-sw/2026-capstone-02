@@ -56,7 +56,7 @@ func (domain IntervalDomain) Is_bounded() bool {
 
 func (lhs IntervalDomain) Join(rhs IntervalDomain) (IntervalDomain, bool) {
 	if lhs.is_bottom {
-		return rhs, rhs.IsBot()
+		return rhs, !rhs.IsBot()
 	}
 	if rhs.is_bottom {
 		return lhs, false

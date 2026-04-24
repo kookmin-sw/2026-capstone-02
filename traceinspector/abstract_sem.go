@@ -13,7 +13,7 @@ import (
 // abstract_mem: the input abstract memory state wrt the node should be interpreted
 type AbstractState[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl ArrayDomain[IntDomainImpl, ArrayDomainImpl]] struct {
 	node_location CFGNodeLocation
-	abstract_mem  AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]
+	abstract_mem  AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]
 }
 
 func (state AbstractState[IntDomainImpl, ArrayDomainImpl]) String() string {
@@ -43,17 +43,18 @@ type AbstractSemantics[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayD
 // interpreter performs interpretation until it collects the fixpoint semantics for the function body, and hence the
 // return value. The interpreter will spawn another ImpFunctionInterpreter in the case a function call is invoked.
 type ImpFunctionInterpreter[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl ArrayDomain[IntDomainImpl, ArrayDomainImpl]] struct {
-	func_cfg_map        FunctionCFGMap
-	func_name           imp.ImpFunctionName
-	func_info_map       imp.ImpFunctionMap
-	abstract_mem        *FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl] // joined global state
-	intdomain_default   IntDomainImpl                                        // an instantiation of the integer domain impl
-	booldomain_default  domain.BoolDomain                                    // an instantiation of the boolean domain
-	arraydomain_default ArrayDomainImpl                                      // an instantiation of the array domain impl
+	func_cfg_map          FunctionCFGMap
+	func_name             imp.ImpFunctionName
+	func_info_map         imp.ImpFunctionMap
+	abstract_function_mem *AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl] // joined global state
+	intdomain_default     IntDomainImpl                                        // an instantiation of the integer domain impl
+	booldomain_default    domain.BoolDomain                                    // an instantiation of the boolean domain
+	arraydomain_default   ArrayDomainImpl                                      // an instantiation of the array domain impl
+	settings              AnalysisSettings
 }
 
 // Compute the abstract value of an expression expr under an abstract memory state abs_mem
-func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_expr(node_location CFGNodeLocation, expr imp.Expr, abs_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) AbstractValue[IntDomainImpl, ArrayDomainImpl] {
+func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_expr(node_location CFGNodeLocation, expr imp.Expr, abs_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) AbstractValue[IntDomainImpl, ArrayDomainImpl] {
 	switch expr_ty := expr.(type) {
 	case *imp.VarExpr:
 		return abs_mem[expr_ty.Name]
@@ -164,16 +165,28 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		write_error(create_empty_node_location(), fmt.Sprintf("The designated CFG Node %s doesn't exist", in_state.node_location))
 	}
 
-	// When we receive a new pair, update the global state with its join
-	global_state, _ := interpreter.abstract_mem.pre_mem[in_state.node_location.Id]
-	state_changed := global_state.Join_inplace(in_state.abstract_mem)
-	if !state_changed && interpreter.abstract_mem.n_visits[in_state.node_location.Id] > 0 {
-		// no updates to the state
-		write_info(in_state.node_location, "No updates to node state")
-		return nil
+	global_state, _ := interpreter.abstract_function_mem.pre_mem_node_map[in_state.node_location.Id]
+
+	cond_node, is_cond_node := cfg_node.(*CFGCondNode)
+	loop_widened := false
+	if is_cond_node && cond_node.Is_loop_head && interpreter.abstract_function_mem.n_visits[in_state.node_location.Id] > interpreter.settings.Loop_iters_before_Widening {
+		// Apply widening if visit count is greater than threshold
+		interpreter.abstract_function_mem.n_visits[in_state.node_location.Id] = 1
+		global_state.Widen_inplace(in_state.abstract_mem)
+		write_update_node_state(in_state.node_location, global_state.String(), "Widen global memory state")
+		loop_widened = true
+	} else {
+		// When we receive a new pair, update the global state with its join
+		state_changed := global_state.Join_inplace(in_state.abstract_mem)
+		if !state_changed && interpreter.abstract_function_mem.n_visits[in_state.node_location.Id] > 0 {
+			// no updates to the state
+			write_info(in_state.node_location, fmt.Sprintf("No updates to node state %s", global_state))
+			return nil
+		}
+		write_update_node_state(in_state.node_location, global_state.String(), "Join global memory state")
 	}
-	write_update_node_state(in_state.node_location, global_state.String(), "Join global memory state")
-	interpreter.abstract_mem.n_visits[in_state.node_location.Id]++
+
+	interpreter.abstract_function_mem.n_visits[in_state.node_location.Id]++
 	// Executed on the joined node state
 	in_state.abstract_mem = global_state.Clone()
 
@@ -198,9 +211,25 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 
 		case *imp.SkipStmt:
 			// do nothing
+		case *imp.BreakStmt:
+			// do nothing; follows CFG edge
+		case *imp.ContinueStmt:
+			// do nothing; follows CFG edge
+		case *imp.PrintStmt:
+			// do nothing to state; follows CFG edge
+		// case *imp.ScanfStmt:
+		// 	// by default scanf initializes variables to top
+		// 	for index, fmt_str := range strings.Split(stmt.Format_string, " ") {
+		// 		switch fmt_str {
+		// 		case "%d":
+
+		// 		}
+		// 	}
+
 		default:
-			panic("unimplemented")
+			panic(fmt.Sprintf("unimplemented stmt %T", stmt))
 		}
+
 	case *CFGCondNode:
 		cond_edge, is_cond_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(*CFGCondEdge)
 		if !is_cond_edge {
@@ -210,6 +239,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		// We can just execute only the corresponding branch.
 		// Otherwise filter for each branch and join the result
 		cond_val := interpreter.Eval_expr(in_state.node_location, cfg_node.Cond_expr, in_state.abstract_mem)
+		fmt.Println("cond val", cond_val.Get_bool(), loop_widened)
 
 		// Try to represent it as SimpleProp
 		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
@@ -237,7 +267,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_true_node_loc, abstract_mem: new_state.abstract_mem})
 		}
 
-		if (cond_val.Get_bool().IsFalse() || cond_val.Get_bool().IsTop()) && cond_edge.To_false_node_loc.NodeExists() {
+		if (cond_val.Get_bool().IsFalse() || cond_val.Get_bool().IsTop() || loop_widened) && cond_edge.To_false_node_loc.NodeExists() {
 			// run just the false branch on filter_false(in_state)
 			new_state := in_state.Clone()
 			if simpleprop_success {
@@ -250,44 +280,10 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
 					}
 				}
+			} else {
+				fmt.Println("false - simprop failed. Passing unfiltered state to node", cond_edge.To_false_node_loc, new_state)
 			}
-
 			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem})
-		}
-
-		if cond_val.Get_bool().IsTop() {
-			// run both branches
-			if cond_edge.To_true_node_loc.NodeExists() { // true stmt exists
-				new_state := in_state.Clone()
-				if simpleprop_success { // apply filter
-					true_filters := domain.Filter_true_query_simpleprop(cond_simpleprop)
-					for _, filter := range true_filters {
-						lhs_name := get_varname_from_lvalue(filter.Term_expr)
-						rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
-						if rhs_dom_val.domain_kind == IntDomainKind {
-							updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
-							new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
-						}
-					}
-				}
-				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_true_node_loc, abstract_mem: new_state.abstract_mem})
-			}
-
-			if cond_edge.To_false_node_loc.NodeExists() { // false stmt exists
-				new_state := in_state.Clone()
-				if simpleprop_success { // apply filter
-					false_filters := domain.Filter_false_query_simpleprop(cond_simpleprop)
-					for _, filter := range false_filters {
-						lhs_name := get_varname_from_lvalue(filter.Term_expr)
-						rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
-						if rhs_dom_val.domain_kind == IntDomainKind {
-							updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
-							new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
-						}
-					}
-				}
-				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem})
-			}
 		}
 	}
 
