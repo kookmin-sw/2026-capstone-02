@@ -113,6 +113,14 @@ func (lhs IntervalDomain) From_IntLitExpr(expr imp.IntLitExpr) IntervalDomain {
 	return IntervalDomain{lower: algebra.ExtInt_Finite(expr.Value), upper: algebra.ExtInt_Finite(expr.Value)}
 }
 
+func (lhs IntervalDomain) CreateTop() IntervalDomain {
+	return IntervalTop()
+}
+
+func (lhs IntervalDomain) CreateBot() IntervalDomain {
+	return IntervalBot()
+}
+
 func (lhs IntervalDomain) Add(rhs IntervalDomain) IntervalDomain {
 	// [x1, x2] + [y1, y2] = [x1 + y1, x2 + y2]
 	if lhs.is_bottom || rhs.is_bottom {
@@ -174,7 +182,7 @@ func (lhs IntervalDomain) Disjoint(rhs IntervalDomain) bool {
 
 func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if lhs.Disjoint(rhs) {
 		return BoolDomain{val: false}
@@ -189,7 +197,7 @@ func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Neq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if lhs.Disjoint(rhs) {
 		return BoolDomain{val: true}
@@ -203,7 +211,7 @@ func (lhs IntervalDomain) Neq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Geq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
@@ -217,7 +225,7 @@ func (lhs IntervalDomain) Geq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
@@ -231,7 +239,7 @@ func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
@@ -245,7 +253,7 @@ func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Lessthan(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
