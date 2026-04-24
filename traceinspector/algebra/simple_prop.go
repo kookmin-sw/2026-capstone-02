@@ -10,12 +10,12 @@ import (
 // x and y must be one of imp.VarExpr, imp.ArrayIndexExpr, imp.LenExpr.
 // If y_coeff is SimpleInequalityCoeff_zero, it means y doesn't exist
 type SimpleProp struct {
-	prop_type SimplePropType  // type of the prop
-	x_expr    imp.Expr        // variable or arrayindexop or len()
-	x_coeff   SimplePropCoeff // whether coefficient of x is positive
-	y_expr    imp.Expr        // same as x_expr
-	y_coeff   SimplePropCoeff // whether coefficient of y is positive
-	constant  int             // constant value
+	Prop_type SimplePropType  // type of the prop
+	X_expr    imp.Expr        // variable or arrayindexop or len()
+	X_coeff   SimplePropCoeff // whether coefficient of x is positive
+	Y_expr    imp.Expr        // same as x_expr
+	Y_coeff   SimplePropCoeff // whether coefficient of y is positive
+	Constant  int             // constant value
 }
 
 type SimplePropType int
@@ -50,7 +50,7 @@ func (coeff SimplePropCoeff) Negate() SimplePropCoeff {
 func (ieq SimpleProp) String() string {
 	var x_sign, y_sign, prop_op string
 
-	switch ieq.prop_type {
+	switch ieq.Prop_type {
 	case SimplePropType_Invalid:
 		return "INVALID_SIMPLEPROP"
 	case SimplePropType_Eq:
@@ -60,18 +60,18 @@ func (ieq SimpleProp) String() string {
 	case SimplePropType_Leq:
 		prop_op = "<="
 	}
-	switch ieq.x_coeff {
+	switch ieq.X_coeff {
 	case SimplePropCoeff_negative:
 		x_sign = "-"
 	}
-	switch ieq.y_coeff {
+	switch ieq.Y_coeff {
 	case SimplePropCoeff_zero:
-		return fmt.Sprintf("%s%s %s %d", x_sign, ieq.x_expr, prop_op, ieq.constant)
+		return fmt.Sprintf("%s%s %s %d", x_sign, ieq.X_expr, prop_op, ieq.Constant)
 	case SimplePropCoeff_negative:
 		y_sign = "-"
 	}
 
-	return fmt.Sprintf("%s%s + %s%s %s %d", x_sign, ieq.x_expr, y_sign, ieq.y_expr, prop_op, ieq.constant)
+	return fmt.Sprintf("%s%s + %s%s %s %d", x_sign, ieq.X_expr, y_sign, ieq.Y_expr, prop_op, ieq.Constant)
 
 }
 
@@ -114,19 +114,19 @@ func _check_binary_expr(expr imp.Expr) (imp.Expr, SimplePropCoeff, imp.Expr, Sim
 // given a LHS expr of a integer prop, try to convert the expr into the SimpleProp of the prop_type
 func _convert_lhs_to_simple_prop(prop_type SimplePropType, lhs imp.Expr) (SimpleProp, bool) {
 	// pull constants out of LHS by representing LHS as Polynomial struct
-	lhs_poly, err := build_polynomial(convert_subtraction_to_neg(lhs, false))
+	lhs_poly, err := build_polynomial(Convert_subtraction_to_neg(lhs, false))
 	if err != nil {
 		return SimpleProp{}, false
 	}
-	created_prop := SimpleProp{prop_type: prop_type}
-	created_prop.constant = -lhs_poly.constant // send constant to other side of leq
+	created_prop := SimpleProp{Prop_type: prop_type}
+	created_prop.Constant = -lhs_poly.constant // send constant to other side of leq
 
 	// check if the polynomial is the form `±x + C`
 	single_expr, single_coeff := _check_if_var(lhs_poly.variable_expr)
 	if single_expr != nil {
-		created_prop.x_expr = single_expr
-		created_prop.y_coeff = SimplePropCoeff_zero
-		created_prop.x_coeff = single_coeff
+		created_prop.X_expr = single_expr
+		created_prop.Y_coeff = SimplePropCoeff_zero
+		created_prop.X_coeff = single_coeff
 		return created_prop, true
 	}
 
@@ -134,10 +134,10 @@ func _convert_lhs_to_simple_prop(prop_type SimplePropType, lhs imp.Expr) (Simple
 	x_expr, x_coeff, y_expr, y_coeff := _check_binary_expr(lhs_poly.variable_expr)
 
 	if x_expr != nil && y_expr != nil {
-		created_prop.x_expr = x_expr
-		created_prop.x_coeff = x_coeff
-		created_prop.y_expr = y_expr
-		created_prop.y_coeff = y_coeff
+		created_prop.X_expr = x_expr
+		created_prop.X_coeff = x_coeff
+		created_prop.Y_expr = y_expr
+		created_prop.Y_coeff = y_coeff
 		return created_prop, true
 	} else {
 		return SimpleProp{}, false
@@ -147,18 +147,18 @@ func _convert_lhs_to_simple_prop(prop_type SimplePropType, lhs imp.Expr) (Simple
 // Given an imp bool expression, try and convert the expression into a SimpleProp.
 // Returns SimpleProp, and a boolean indicating whether the conversion was possible.
 // Very naive and lazy implementation btw
-func imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
+func Imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
 	switch expr_ty := expr.(type) {
 	case *imp.LessthanExpr:
 		// convert to leq
 		// lhs < rhs -> lhs <= rhs - 1
-		return imp_expr_to_simple_prop(&imp.LeqExpr{Node: expr_ty.Node, Lhs: expr_ty.Lhs, Rhs: &imp.SubExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: &imp.IntLitExpr{Node: expr_ty.Node, Value: 1}}})
+		return Imp_expr_to_simple_prop(&imp.LeqExpr{Node: expr_ty.Node, Lhs: expr_ty.Lhs, Rhs: &imp.SubExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: &imp.IntLitExpr{Node: expr_ty.Node, Value: 1}}})
 	case *imp.GreaterthanExpr:
 		// lhs > rhs -> rhs < lhs
-		return imp_expr_to_simple_prop(&imp.LessthanExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: expr_ty.Lhs})
+		return Imp_expr_to_simple_prop(&imp.LessthanExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: expr_ty.Lhs})
 	case *imp.GeqExpr:
 		// lhs >= rhs -> rhs <= lhs
-		return imp_expr_to_simple_prop(&imp.LeqExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: expr_ty.Lhs})
+		return Imp_expr_to_simple_prop(&imp.LeqExpr{Node: expr_ty.Node, Lhs: expr_ty.Rhs, Rhs: expr_ty.Lhs})
 	case *imp.LeqExpr:
 		// move all terms to lhs
 		zero_expr, err := zero_rhs(expr)
@@ -197,24 +197,23 @@ func imp_expr_to_simple_prop(expr imp.Expr) (SimpleProp, bool) {
 	return SimpleProp{}, false
 }
 
+// Compute the negated form of the SimpleProp
 func (sp SimpleProp) Negate() SimpleProp {
-	switch sp.prop_type {
+	switch sp.Prop_type {
 	case SimplePropType_Eq:
-		sp.prop_type = SimplePropType_Neq
+		sp.Prop_type = SimplePropType_Neq
 	case SimplePropType_Neq:
-		sp.prop_type = SimplePropType_Eq
+		sp.Prop_type = SimplePropType_Eq
 	case SimplePropType_Leq:
 		// !(±x ±y <= C) = ±x ±y > C = ±x ±y >= C + 1 = ∓x ∓y <= -C - 1
 		return SimpleProp{
-			prop_type: SimplePropType_Leq,
-			x_expr:    sp.x_expr,
-			x_coeff:   sp.x_coeff.Negate(),
-			y_expr:    sp.y_expr,
-			y_coeff:   sp.y_coeff.Negate(),
-			constant:  -sp.constant - 1,
+			Prop_type: SimplePropType_Leq,
+			X_expr:    sp.X_expr,
+			X_coeff:   sp.X_coeff.Negate(),
+			Y_expr:    sp.Y_expr,
+			Y_coeff:   sp.Y_coeff.Negate(),
+			Constant:  -sp.Constant - 1,
 		}
 	}
 	return sp
 }
-
-func (sp SimpleProp) Filter_True_on_Expr(expr imp.Expr)

@@ -1,10 +1,21 @@
 package domain
 
-type FilterQuery int
+import (
+	"traceinspector/imp"
+)
+
+type FilterQueryType int
 
 const (
-	FilterQuery_Eq FilterQuery = iota
-	FilterQuery_Neq
-	FilterQuery_Leq
-	FilterQuery_Geq
+	FilterQueryType_Invalid FilterQueryType = iota
+	FilterQueryType_Eq
+	FilterQueryType_Neq
+	FilterQueryType_Leq
+	FilterQueryType_Geq
 )
+
+type FilterQuery struct {
+	term_expr  imp.Expr
+	query_type FilterQueryType
+	rhs        imp.Expr
+}

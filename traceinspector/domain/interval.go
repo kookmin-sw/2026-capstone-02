@@ -250,20 +250,20 @@ func (lhs IntervalDomain) Lessthan(rhs IntervalDomain) BoolDomain {
 	return BoolDomain{is_top: true}
 }
 
-func (lhs IntervalDomain) Filter(filter_type FilterQuery, rhs IntervalDomain) IntervalDomain {
+func (lhs IntervalDomain) Filter(filter_type FilterQueryType, rhs IntervalDomain) IntervalDomain {
 	switch filter_type {
-	case FilterQuery_Eq:
+	case FilterQueryType_Eq:
 		if rhs.Incl(lhs) {
 			return rhs
 		} else {
 			return IntervalBot()
 		}
-	case FilterQuery_Neq:
+	case FilterQueryType_Neq:
 		// imprecise?
 		return IntervalTop()
-	case FilterQuery_Leq:
+	case FilterQueryType_Leq:
 		lhs.upper = lhs.upper.Min(rhs.lower)
-	case FilterQuery_Geq:
+	case FilterQueryType_Geq:
 		lhs.lower = lhs.lower.Max(rhs.upper)
 	}
 	return lhs.CheckValid()

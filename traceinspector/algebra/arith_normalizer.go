@@ -39,7 +39,7 @@ func zero_rhs(expr imp.Expr) (imp.Expr, error) {
 // --e -> e
 // e - e -> e + -e
 // Given an integer expression, convert all subtraction into addition, and simplify any double negations
-func convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
+func Convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
 	switch expr_ty := expr.(type) {
 	case *imp.VarExpr, *imp.ArrayIndexExpr, *imp.LenExpr:
 		if negate {
@@ -57,28 +57,28 @@ func convert_subtraction_to_neg(expr imp.Expr, negate bool) imp.Expr {
 		if negate {
 			return expr_ty.Subexpr
 		} else {
-			return &imp.NegExpr{Node: expr_ty.Node, Subexpr: convert_subtraction_to_neg(expr_ty.Subexpr, true)}
+			return &imp.NegExpr{Node: expr_ty.Node, Subexpr: Convert_subtraction_to_neg(expr_ty.Subexpr, true)}
 		}
 	case *imp.AddExpr:
-		return &imp.AddExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, negate)}
+		return &imp.AddExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, negate)}
 	case *imp.SubExpr:
 		// - (lhs - rhs) -> -lhs + rhs
 		// (lhs - rhs) -> lhs + -rhs
 		if negate {
-			return &imp.AddExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, true), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+			return &imp.AddExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, true), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, false)}
 		} else {
-			return &imp.AddExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, true)}
+			return &imp.AddExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, false), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, true)}
 		}
 	case *imp.MulExpr:
 		// multiplication, division should propogate sign to one of its arguments
-		return &imp.MulExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		return &imp.MulExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.DivExpr:
-		return &imp.DivExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		return &imp.DivExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.ModExpr:
-		return &imp.ModExpr{Node: expr_ty.Node, Lhs: convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: convert_subtraction_to_neg(expr_ty.Rhs, false)}
+		return &imp.ModExpr{Node: expr_ty.Node, Lhs: Convert_subtraction_to_neg(expr_ty.Lhs, negate), Rhs: Convert_subtraction_to_neg(expr_ty.Rhs, false)}
 	case *imp.ParenExpr:
 		// parenexpr does though
-		return &imp.ParenExpr{Node: expr_ty.Node, Subexpr: convert_subtraction_to_neg(expr_ty.Subexpr, negate)}
+		return &imp.ParenExpr{Node: expr_ty.Node, Subexpr: Convert_subtraction_to_neg(expr_ty.Subexpr, negate)}
 	default:
 		return expr_ty
 	}
@@ -233,7 +233,7 @@ func build_polynomial(expr imp.Expr) (Polynomial, error) {
 // Given an arbitrary integer expression, normalize to the form
 // ax ☉ by ☉ ... ☉ cz + C, where C is an integer constant
 func normalize_integer_expr(expr imp.Expr) (imp.Expr, error) {
-	poly, err := build_polynomial(convert_subtraction_to_neg(expr, false))
+	poly, err := build_polynomial(Convert_subtraction_to_neg(expr, false))
 	if err != nil {
 		return nil, err
 	} else {

@@ -1,6 +1,8 @@
 package domain
 
-import "traceinspector/imp"
+import (
+	"traceinspector/imp"
+)
 
 type AbstractDomain[DomainImpl any] interface {
 	IsBot() bool
@@ -27,5 +29,6 @@ type IntegerDomain[DomainImpl any] interface {
 	Leq(DomainImpl) BoolDomain
 	Geq(DomainImpl) BoolDomain
 	Neg() DomainImpl
-	Filter(FilterQuery, DomainImpl) DomainImpl
+	Filter(FilterQueryType, DomainImpl) DomainImpl // compute the result of filtering the current domain
+	// x.Filter(<=, y) = x', where x' ⊑ x and x' <= y
 }

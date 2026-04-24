@@ -25,7 +25,7 @@ func Test_simpleprop(t *testing.T) {
 				case token.EQL, token.NEQ, token.GEQ, token.LEQ, token.GTR, token.LSS:
 					original := translator.Translate_Expr(expr)
 					original_zero, _ := zero_rhs(original)
-					new_expr, safe := imp_expr_to_simple_prop(original_zero)
+					new_expr, safe := Imp_expr_to_simple_prop(original_zero)
 					if safe {
 						t.Errorf("SimpleProp: %s -> %s\n", original, new_expr)
 					} else {
