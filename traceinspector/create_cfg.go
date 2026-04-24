@@ -90,14 +90,14 @@ func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast imp.Stmt, line_num 
 
 func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast imp.Expr, line_num int) NodeID {
 	current_node_index := graphcreator.next_node_id
-	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Ast: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_cond, Line_num: line_num}
+	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Cond_expr: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_cond, Line_num: line_num}
 	graphcreator.next_node_id++
 	return current_node_index
 }
 
 func (graphcreator *CFGGraphCreator) create_cfg_edge(from_id NodeID, to_id NodeID, label string) {
 	if from_id > 0 && to_id > 0 {
-		edge := CFGEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: CFGNodeLocation{graphcreator.func_name, from_id}, To_node_id: CFGNodeLocation{graphcreator.func_name, to_id}, Label: label}
+		edge := CFGEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_loc: CFGNodeLocation{graphcreator.func_name, from_id}, To_node_loc: CFGNodeLocation{graphcreator.func_name, to_id}, Label: label}
 		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
 		graphcreator.Cfg_graph.Edge_map_to[to_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_id], &edge)
 		graphcreator.next_edge_id++
@@ -106,7 +106,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_edge(from_id NodeID, to_id NodeI
 
 func (graphcreator *CFGGraphCreator) create_cfg_cond_edge(from_id NodeID, to_true_id NodeID, to_false_id NodeID) {
 	if from_id > 0 && (to_true_id > 0 || to_false_id > 0) {
-		edge := CFGCondEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_id: CFGNodeLocation{graphcreator.func_name, from_id}, To_true_node_id: CFGNodeLocation{graphcreator.func_name, to_true_id}, To_false_node_id: CFGNodeLocation{graphcreator.func_name, to_false_id}}
+		edge := CFGCondEdge{Id: CFGEdgeLocation{graphcreator.func_name, graphcreator.next_edge_id}, From_node_loc: CFGNodeLocation{graphcreator.func_name, from_id}, To_true_node_loc: CFGNodeLocation{graphcreator.func_name, to_true_id}, To_false_node_loc: CFGNodeLocation{graphcreator.func_name, to_false_id}}
 		graphcreator.Cfg_graph.Edge_map_from[from_id] = &edge
 		if to_true_id > 0 {
 			graphcreator.Cfg_graph.Edge_map_to[to_true_id] = append(graphcreator.Cfg_graph.Edge_map_to[to_true_id], &edge)

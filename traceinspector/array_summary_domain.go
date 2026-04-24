@@ -32,15 +32,16 @@ func (domain ArraySummaryDomain[ElemDomain]) IsTop() bool {
 	return domain.is_top
 }
 
-func (lhs ArraySummaryDomain[ElemDomain]) Join(rhs ArraySummaryDomain[ElemDomain]) ArraySummaryDomain[ElemDomain] {
+func (lhs ArraySummaryDomain[ElemDomain]) Join(rhs ArraySummaryDomain[ElemDomain]) (ArraySummaryDomain[ElemDomain], bool) {
 	if lhs.is_bottom {
-		return rhs
+		return rhs, rhs.is_bottom
 	} else if rhs.is_bottom {
-		return lhs
+		return lhs, lhs.is_bottom
 	} else if lhs.is_top || rhs.is_top {
-		return ArraySummaryDomain[ElemDomain]{is_top: true}
+		return ArraySummaryDomain[ElemDomain]{is_top: true}, lhs.is_top
 	} else {
-		return ArraySummaryDomain[ElemDomain]{val: lhs.val.Join(rhs.val)}
+		elem_joined, elem_changed := lhs.val.Join(rhs.val)
+		return ArraySummaryDomain[ElemDomain]{val: elem_joined}, elem_changed
 	}
 }
 

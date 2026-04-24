@@ -1,6 +1,7 @@
 package traceinspector
 
 import (
+	"fmt"
 	"traceinspector/domain"
 	"traceinspector/imp"
 )
@@ -47,4 +48,12 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 	}
 	g := AbstractAnalyzer[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]]{Function_cfgs: func_cfg_map, Function_defs: func_info_map, Create_semantics_func: create_sem}
 	g.Start_analysis("main")
+	fmt.Println("Finished. Final state:")
+	for key, val := range g.function_pre_mem_map {
+		fmt.Println("---------")
+		fmt.Println(key)
+		for nid, nval := range val.pre_mem {
+			fmt.Println(nid, ":", nval)
+		}
+	}
 }

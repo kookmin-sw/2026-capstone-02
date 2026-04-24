@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"traceinspector/imp"
 )
 
@@ -12,7 +13,8 @@ type AnalyzerOutputType string
 const (
 	AnalyzerOutput_error       AnalyzerOutputType = "error"
 	AnalyzerOutput_update_node AnalyzerOutputType = "update_node"
-	AnalyzerOutput_information AnalyzerOutputType = "info"
+	AnalyzerOutput_info        AnalyzerOutputType = "info"
+	AnalyzerOutput_warning     AnalyzerOutputType = "warning"
 )
 
 type AnalyzerOutput struct {
@@ -23,6 +25,26 @@ type AnalyzerOutput struct {
 	Log           string
 }
 
+func write_info(node_location CFGNodeLocation, msg string) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	enc.Encode(AnalyzerOutput{Type: AnalyzerOutput_info, Function_name: node_location.Function_name, Node_id: node_location.Id, Log: msg})
+	out := &bytes.Buffer{}
+	json.Compact(out, buf.Bytes())
+	fmt.Println(out.String())
+}
+
+func write_warning(node_location CFGNodeLocation, msg string) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	enc.Encode(AnalyzerOutput{Type: AnalyzerOutput_warning, Function_name: node_location.Function_name, Node_id: node_location.Id, Log: msg})
+	out := &bytes.Buffer{}
+	json.Compact(out, buf.Bytes())
+	fmt.Println(out.String())
+}
+
 func write_error(node_location CFGNodeLocation, msg string) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
@@ -31,6 +53,7 @@ func write_error(node_location CFGNodeLocation, msg string) {
 	out := &bytes.Buffer{}
 	json.Compact(out, buf.Bytes())
 	fmt.Println(out.String())
+	os.Exit(1)
 }
 
 func write_update_node(node_location CFGNodeLocation, label string) {

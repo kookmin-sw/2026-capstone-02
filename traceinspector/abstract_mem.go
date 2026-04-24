@@ -49,15 +49,15 @@ func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_int() IntDomainImpl
 }
 
 func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_bool() domain.BoolDomain {
-	if val.domain_kind != IntDomainKind {
-		panic("Attempted to get non-boolkind abstractvalue as int")
+	if val.domain_kind != BoolDomainKind {
+		panic("Attempted to get non-boolkind abstractvalue as bool")
 	}
 	return val.bool_domain
 }
 
 func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_array() ArrayDomainImpl {
-	if val.domain_kind != IntDomainKind {
-		panic("Attempted to get non-arraykind abstractvalue as int")
+	if val.domain_kind != ArrayDomainKind {
+		panic("Attempted to get non-arraykind abstractvalue as array")
 	}
 	return val.array_domain
 }
@@ -105,21 +105,26 @@ func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Clone() Abstract
 }
 
 // Modify the values in node_mem inplace so that they are the result of joining with values in other_mem
-func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Join_inplace(other_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) {
+// Returns bool indicating whether the mem was changed
+func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Join_inplace(other_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) bool {
+	changed := false
 	for key, val := range other_mem {
 		original_val, original_exists := node_mem[key]
 		var joined AbstractValue[IntDomainImpl, ArrayDomainImpl]
 		if original_exists {
 			joined.domain_kind = original_val.domain_kind
+			indiv_changed := false
 			switch joined.domain_kind {
 			case IntDomainKind:
-				joined.int_domain = original_val.Get_int().Clone().Join(val.Get_int())
+				joined.int_domain, indiv_changed = original_val.Get_int().Clone().Join(val.Get_int())
 			case BoolDomainKind:
-				joined.bool_domain = original_val.Get_bool().Clone().Join(val.Get_bool())
+				joined.bool_domain, indiv_changed = original_val.Get_bool().Clone().Join(val.Get_bool())
 			case ArrayDomainKind:
-				joined.array_domain = original_val.Get_array().Clone().Join(val.Get_array())
+				joined.array_domain, indiv_changed = original_val.Get_array().Clone().Join(val.Get_array())
 			}
+			changed = changed || indiv_changed
 		} else {
+			changed = true
 			joined.domain_kind = val.domain_kind
 			switch joined.domain_kind {
 			case IntDomainKind:
@@ -132,6 +137,7 @@ func (node_mem AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]) Join_inplace(oth
 		}
 		node_mem[key] = joined
 	}
+	return changed
 }
 
 type NodeAbstractMemMap[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] map[NodeID]AbstractNodeMem[IntDomainImpl, ArrayDomainImpl]
@@ -150,6 +156,7 @@ func (mem_map NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl]) String() strin
 type FunctionAbstractMem[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] struct {
 	pre_mem       NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl]
 	function_name imp.ImpFunctionName
+	n_visits      map[NodeID]int
 	return_value  AbstractValue[IntDomainImpl, ArrayDomainImpl]
 }
 
@@ -159,6 +166,7 @@ func (func_mem FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]) String() str
 
 func (func_mem *FunctionAbstractMem[IntDomainImpl, ArrayDomainImpl]) Initialize(function_name imp.ImpFunctionName, function_cfg *CFGGraph) {
 	func_mem.pre_mem = make(NodeAbstractMemMap[IntDomainImpl, ArrayDomainImpl])
+	func_mem.n_visits = make(map[NodeID]int)
 	func_mem.function_name = function_name
 	for node_id := range function_cfg.Node_map {
 		func_mem.pre_mem[node_id] = make(AbstractNodeMem[IntDomainImpl, ArrayDomainImpl])

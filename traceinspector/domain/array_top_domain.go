@@ -19,9 +19,9 @@ func (domain ArrayTopDomain) IsTop() bool {
 	return true
 }
 
-func (lhs ArrayTopDomain) Join(rhs ArrayTopDomain) ArrayTopDomain {
-	length_joined := lhs.length.Join(rhs.length)
-	return ArrayTopDomain{length: length_joined, is_top: true}
+func (lhs ArrayTopDomain) Join(rhs ArrayTopDomain) (ArrayTopDomain, bool) {
+	length_joined, length_changed := lhs.length.Join(rhs.length)
+	return ArrayTopDomain{length: length_joined, is_top: true}, length_changed
 }
 
 func (lhs ArrayTopDomain) Incl(rhs ArrayTopDomain) bool {

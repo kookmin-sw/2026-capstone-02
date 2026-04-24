@@ -54,14 +54,14 @@ func (domain IntervalDomain) Is_bounded() bool {
 	return !domain.IsBot() && domain.lower.IsFinite() && domain.upper.IsFinite()
 }
 
-func (lhs IntervalDomain) Join(rhs IntervalDomain) IntervalDomain {
+func (lhs IntervalDomain) Join(rhs IntervalDomain) (IntervalDomain, bool) {
 	if lhs.is_bottom {
-		return rhs
+		return rhs, rhs.IsBot()
 	}
 	if rhs.is_bottom {
-		return lhs
+		return lhs, false
 	}
-	return IntervalDomain{lower: lhs.lower.Min(rhs.lower), upper: lhs.upper.Max(rhs.upper)}
+	return IntervalDomain{lower: lhs.lower.Min(rhs.lower), upper: lhs.upper.Max(rhs.upper)}, !(lhs.lower.Eq(lhs.lower.Min(rhs.lower)) && lhs.upper.Eq(lhs.upper.Max(rhs.upper)))
 }
 
 // `lhs ⊑ rhs` = lhs.lower >= rhs.lower && lhs.upper <= rhs.upper
@@ -174,7 +174,7 @@ func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
 	}
 	// [x, x] = [x, x]
 	if lhs.lower.IsFinite() && rhs.lower.IsFinite() && lhs.upper.IsFinite() && rhs.upper.IsFinite() && lhs.lower.Eq(lhs.upper) && lhs.lower.Eq(rhs.lower) && lhs.upper.Eq(rhs.upper) {
-		return BoolDomain{val: false}
+		return BoolDomain{val: true}
 	}
 	// sound
 	return BoolDomain{is_top: true}
@@ -262,8 +262,10 @@ func (lhs IntervalDomain) Filter(filter_type FilterQueryType, rhs IntervalDomain
 		// imprecise?
 		return IntervalTop()
 	case FilterQueryType_Leq:
+		// fmt.Println("Leq filter interval lhs:", lhs, "rhs:", rhs)
 		lhs.upper = lhs.upper.Min(rhs.lower)
 	case FilterQueryType_Geq:
+		// fmt.Println("Geq filter interval lhs:", lhs, "rhs:", rhs)
 		lhs.lower = lhs.lower.Max(rhs.upper)
 	}
 	return lhs.CheckValid()

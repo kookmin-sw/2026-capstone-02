@@ -3,6 +3,7 @@ package traceinspector
 import (
 	"fmt"
 	"strings"
+	"traceinspector/algebra"
 	"traceinspector/domain"
 	"traceinspector/imp"
 )
@@ -65,6 +66,12 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_
 	case *imp.StringLitExpr:
 		// TODO do something about strings
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
+	case *imp.NegExpr:
+		subexpr_val := interpreter.Eval_expr(node_location, expr_ty.Subexpr, abs_mem)
+		if subexpr_val.domain_kind != IntDomainKind {
+			write_error(node_location, fmt.Sprintf("Result of arithmetic negation returned %s instead if IntDomain", subexpr_val.domain_kind))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: subexpr_val.Get_int().Neg()}
 	case *imp.AddExpr:
 		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
 		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
@@ -131,8 +138,24 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_
 		}
 		result_val := lhs_val.Get_int().Neq(rhs_val.Get_int())
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
+	case *imp.LeqExpr:
+		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
+		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
+		if !(lhs_val.domain_kind == IntDomainKind && lhs_val.domain_kind == rhs_val.domain_kind) {
+			write_error(node_location, fmt.Sprintf("'%s' : types of LHS and RHS are different (%s vs %s)", expr_ty, lhs_val.domain_kind, rhs_val.domain_kind))
+		}
+		result_val := lhs_val.Get_int().Leq(rhs_val.Get_int())
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
 	}
 	return AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
+}
+
+func get_varname_from_lvalue(expr imp.Expr) string {
+	switch expr_ty := expr.(type) {
+	case *imp.VarExpr:
+		return expr_ty.Name
+	}
+	panic(fmt.Sprintf("get_varname_from_lvalue: unimplemented expr type %T", expr))
 }
 
 func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(in_state AbstractState[IntDomainImpl, ArrayDomainImpl]) []AbstractState[IntDomainImpl, ArrayDomainImpl] {
@@ -142,8 +165,17 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 	}
 
 	// When we receive a new pair, update the global state with its join
-	interpreter.abstract_mem.pre_mem[in_state.node_location.Id].Join_inplace(in_state.abstract_mem)
-	write_update_node(in_state.node_location, interpreter.abstract_mem.pre_mem[in_state.node_location.Id].String())
+	global_state, _ := interpreter.abstract_mem.pre_mem[in_state.node_location.Id]
+	state_changed := global_state.Join_inplace(in_state.abstract_mem)
+	if !state_changed && interpreter.abstract_mem.n_visits[in_state.node_location.Id] > 0 {
+		// no updates to the state
+		write_info(in_state.node_location, "No updates to node state")
+		return nil
+	}
+	write_update_node(in_state.node_location, global_state.String())
+	interpreter.abstract_mem.n_visits[in_state.node_location.Id]++
+	// Executed on the joined node state
+	in_state.abstract_mem = global_state.Clone()
 
 	var return_states []AbstractState[IntDomainImpl, ArrayDomainImpl]
 	switch cfg_node := cfg_node.(type) {
@@ -166,30 +198,104 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 
 		case *imp.SkipStmt:
 			// do nothing
-		case *imp.IfElseStmt:
-			// If at in_state the prop evaluates to either true or false,
-			// We can just execute only the corresponding branch.
-			// Otherwise filter for each branch and join the result
-			cond_val := interpreter.Eval_expr(in_state.node_location, stmt.Cond, in_state.abstract_mem)
-			if cond_val.Get_bool().IsTop() {
-				// run both branches
-			} else if cond_val.Get_bool().IsBot() {
-				// No bool value possible - dead branch
-				return nil
-			} else {
-				if cond_val.Get_bool().IsTrue() {
-					// run just the true branch on filter_true(in_state)
-				} else {
-					// run just the false branch on filter_false(in_state)
+		default:
+			panic("unimplemented")
+		}
+	case *CFGCondNode:
+		cond_edge, is_cond_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(*CFGCondEdge)
+		if !is_cond_edge {
+			write_error(in_state.node_location, "Condition stmt does not have outgoing edge of CondEdge type.")
+		}
+		// If at in_state the prop evaluates to either true or false,
+		// We can just execute only the corresponding branch.
+		// Otherwise filter for each branch and join the result
+		cond_val := interpreter.Eval_expr(in_state.node_location, cfg_node.Cond_expr, in_state.abstract_mem)
+
+		// Try to represent it as SimpleProp
+		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
+		if !simpleprop_success {
+			write_warning(in_state.node_location, fmt.Sprintf("Could not represent '%s' as SimpleProp. Analysis precision may severely deterioriate.", cfg_node.Cond_expr))
+		}
+		if cond_val.Get_bool().IsBot() { // dead branch
+			return nil
+		}
+
+		if (cond_val.Get_bool().IsTrue() || cond_val.Get_bool().IsTop()) && cond_edge.To_true_node_loc.NodeExists() {
+			// run just the true branch on filter_true(in_state)
+			new_state := in_state.Clone()
+			if simpleprop_success {
+				true_filters := domain.Filter_true_query_simpleprop(cond_simpleprop)
+				for _, filter := range true_filters {
+					lhs_name := get_varname_from_lvalue(filter.Term_expr)
+					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
+					if rhs_dom_val.domain_kind == IntDomainKind {
+						updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+					}
+				}
+			}
+			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_true_node_loc, abstract_mem: new_state.abstract_mem})
+		}
+
+		if (cond_val.Get_bool().IsFalse() || cond_val.Get_bool().IsTop()) && cond_edge.To_false_node_loc.NodeExists() {
+			// run just the false branch on filter_false(in_state)
+			new_state := in_state.Clone()
+			if simpleprop_success {
+				false_filters := domain.Filter_false_query_simpleprop(cond_simpleprop)
+				for _, filter := range false_filters {
+					lhs_name := get_varname_from_lvalue(filter.Term_expr)
+					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
+					if rhs_dom_val.domain_kind == IntDomainKind {
+						updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+					}
 				}
 			}
 
+			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem})
+		}
+
+		if cond_val.Get_bool().IsTop() {
+			// run both branches
+			if cond_edge.To_true_node_loc.NodeExists() { // true stmt exists
+				new_state := in_state.Clone()
+				if simpleprop_success { // apply filter
+					true_filters := domain.Filter_true_query_simpleprop(cond_simpleprop)
+					for _, filter := range true_filters {
+						lhs_name := get_varname_from_lvalue(filter.Term_expr)
+						rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
+						if rhs_dom_val.domain_kind == IntDomainKind {
+							updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+							new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						}
+					}
+				}
+				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_true_node_loc, abstract_mem: new_state.abstract_mem})
+			}
+
+			if cond_edge.To_false_node_loc.NodeExists() { // false stmt exists
+				new_state := in_state.Clone()
+				if simpleprop_success { // apply filter
+					false_filters := domain.Filter_false_query_simpleprop(cond_simpleprop)
+					for _, filter := range false_filters {
+						lhs_name := get_varname_from_lvalue(filter.Term_expr)
+						rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
+						if rhs_dom_val.domain_kind == IntDomainKind {
+							updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+							new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						}
+					}
+				}
+				return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem})
+			}
 		}
 	}
+
 	switch outgoing_edge := interpreter.func_cfg_map[interpreter.func_name].Edge_map_from[in_state.node_location.Id].(type) {
 	case *CFGEdge:
 		new_state := in_state.Clone()
-		return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_id, abstract_mem: new_state.abstract_mem})
+		return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: outgoing_edge.To_node_loc, abstract_mem: new_state.abstract_mem})
+	case *CFGCondEdge:
 		// handle condition edges within their respective stmt handling
 	}
 	return return_states

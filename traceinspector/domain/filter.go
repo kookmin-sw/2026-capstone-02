@@ -80,7 +80,7 @@ func arrange_for_expr(sp algebra.SimpleProp, target_expr_is_x bool) (algebra.Sim
 
 // Given a SimpleProp, generate the filter queries for each subexpression assuming the prop is true.
 // For example, x + y <= 3 will generate (<=, 3 - y) for x, and (<=, 3 - x) for y.
-func Filter_true_query(sp algebra.SimpleProp) []FilterQuery {
+func Filter_true_query_simpleprop(sp algebra.SimpleProp) []FilterQuery {
 	if sp.Y_coeff != algebra.SimplePropCoeff_zero {
 		// the y term exists
 		// arrange into form y ⊙ ± x + C
@@ -89,17 +89,17 @@ func Filter_true_query(sp algebra.SimpleProp) []FilterQuery {
 	}
 	var ret []FilterQuery
 	for_x_coeff, for_x_query, for_x_rhs := arrange_for_expr(sp, true)
-	for_y_coeff, for_y_query, for_y_rhs := arrange_for_expr(sp, true)
+	for_y_coeff, for_y_query, for_y_rhs := arrange_for_expr(sp, false)
 	if for_x_coeff == algebra.SimplePropCoeff_positive {
-		ret = append(ret, FilterQuery{term_expr: sp.X_expr, query_type: for_x_query, rhs: for_x_rhs})
+		ret = append(ret, FilterQuery{Term_expr: sp.X_expr, Query_type: for_x_query, Rhs_expr: for_x_rhs})
 	}
 	if for_y_coeff == algebra.SimplePropCoeff_positive {
-		ret = append(ret, FilterQuery{term_expr: sp.Y_expr, query_type: for_y_query, rhs: for_y_rhs})
+		ret = append(ret, FilterQuery{Term_expr: sp.Y_expr, Query_type: for_y_query, Rhs_expr: for_y_rhs})
 	}
 	return ret
 }
 
 // Like Filter_true_query, but for the negation of sp
-func Filter_false_query(sp algebra.SimpleProp) []FilterQuery {
-	return Filter_true_query(sp.Negate())
+func Filter_false_query_simpleprop(sp algebra.SimpleProp) []FilterQuery {
+	return Filter_true_query_simpleprop(sp.Negate())
 }

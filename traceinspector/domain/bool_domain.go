@@ -24,6 +24,10 @@ func (domain BoolDomain) IsTrue() bool {
 	return !domain.IsBot() && !domain.IsTop() && domain.val
 }
 
+func (domain BoolDomain) IsFalse() bool {
+	return !domain.IsBot() && !domain.IsTop() && !domain.val
+}
+
 func (domain BoolDomain) Clone() BoolDomain {
 	return BoolDomain{val: domain.val, is_bottom: domain.is_bottom, is_top: domain.is_top}
 }
@@ -40,17 +44,17 @@ func (domain BoolDomain) IsTop() bool {
 	return domain.is_top
 }
 
-func (lhs BoolDomain) Join(rhs BoolDomain) BoolDomain {
+func (lhs BoolDomain) Join(rhs BoolDomain) (BoolDomain, bool) {
 	if lhs.is_top || rhs.is_top {
-		return BoolDomain{is_top: true}
+		return BoolDomain{is_top: true}, false
 	} else if lhs.is_bottom {
-		return BoolDomain{val: rhs.val, is_bottom: rhs.is_bottom}
+		return BoolDomain{val: rhs.val, is_bottom: rhs.is_bottom}, rhs.is_bottom
 	} else if rhs.is_bottom {
-		return BoolDomain{val: lhs.val, is_bottom: lhs.is_bottom}
+		return BoolDomain{val: lhs.val, is_bottom: lhs.is_bottom}, lhs.is_bottom
 	} else if lhs.val == rhs.val {
-		return BoolDomain{val: lhs.val}
+		return BoolDomain{val: lhs.val}, false
 	} else {
-		return BoolDomain{is_top: true}
+		return BoolDomain{is_top: true}, lhs.IsTop()
 	}
 }
 
