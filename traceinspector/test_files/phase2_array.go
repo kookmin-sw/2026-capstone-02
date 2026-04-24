@@ -1,0 +1,13 @@
+//go:build ignore
+
+package main
+
+func main() {
+	a := 5
+	arr := make_array(a, 0)
+	len_Arr := len(arr)
+	for i := 0; i <= len_Arr; i++ {
+		arr[i] = i
+	}
+	Print(arr)
+}

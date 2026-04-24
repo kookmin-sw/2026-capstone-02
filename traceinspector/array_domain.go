@@ -7,8 +7,8 @@ import (
 type ArrayDomain[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] interface {
 	domain.AbstractDomain[ArrayDomainImpl]
 	From_AbstractValues([]AbstractValue[IntDomainImpl, ArrayDomainImpl]) ArrayDomainImpl
-	Index(IntDomainImpl) AbstractValue[IntDomainImpl, ArrayDomainImpl]
-	SetVal(AbstractValue[IntDomainImpl, ArrayDomainImpl]) ArrayDomainImpl
+	GetIndex(IntDomainImpl) AbstractValue[IntDomainImpl, ArrayDomainImpl]
+	SetVal(IntDomainImpl, AbstractValue[IntDomainImpl, ArrayDomainImpl]) ArrayDomainImpl
 	Len() IntDomainImpl
 	Make_array(IntDomainImpl, AbstractValue[IntDomainImpl, ArrayDomainImpl]) ArrayDomainImpl
 }

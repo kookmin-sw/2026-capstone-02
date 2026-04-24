@@ -53,6 +53,7 @@ type ImpFunctionInterpreter[IntDomainImpl domain.IntegerDomain[IntDomainImpl], A
 	settings              AnalysisSettings
 }
 
+// TODO: fix this part and integrate with get_abstract_value_from_expr
 // Compute the abstract value of an expression expr under an abstract memory state abs_mem
 func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_expr(node_location CFGNodeLocation, expr imp.Expr, abs_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) AbstractValue[IntDomainImpl, ArrayDomainImpl] {
 	switch expr_ty := expr.(type) {
@@ -121,8 +122,24 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_
 		if arr_val.domain_kind != ArrayDomainKind {
 			write_error(node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
 		}
-		result_val := arr_val.Get_array().Index(index_val.Get_int())
+		if !index_val.Get_int().Incl(arr_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))) {
+			write_warning(node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), get_varname_from_lvalue(expr_ty.Base), arr_val.Get_array().Len()))
+		}
+		result_val := arr_val.Get_array().GetIndex(index_val.Get_int())
 		return result_val
+	case *imp.LenExpr:
+		arr_val := interpreter.Eval_expr(node_location, expr_ty.Subexpr, abs_mem)
+		if arr_val.domain_kind != ArrayDomainKind {
+			write_error(node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: arr_val.Get_array().Len()}
+	case *imp.MakeArrayExpr:
+		default_val := interpreter.Eval_expr(node_location, expr_ty.Value, abs_mem)
+		size_val := interpreter.Eval_expr(node_location, expr_ty.Size, abs_mem)
+		if size_val.domain_kind != IntDomainKind {
+			write_error(node_location, fmt.Sprintf("Size argument '%s' in make_array expected to have int domain type, but has type %s", expr_ty.Size, size_val.domain_kind))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: interpreter.arraydomain_default.Make_array(size_val.Get_int(), default_val)}
 	case *imp.EqExpr:
 		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
 		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
@@ -147,6 +164,30 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Eval_
 		}
 		result_val := lhs_val.Get_int().Leq(rhs_val.Get_int())
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
+	case *imp.GeqExpr:
+		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
+		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
+		if !(lhs_val.domain_kind == IntDomainKind && lhs_val.domain_kind == rhs_val.domain_kind) {
+			write_error(node_location, fmt.Sprintf("'%s' : types of LHS and RHS are different (%s vs %s)", expr_ty, lhs_val.domain_kind, rhs_val.domain_kind))
+		}
+		result_val := lhs_val.Get_int().Geq(rhs_val.Get_int())
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
+	case *imp.LessthanExpr:
+		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
+		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
+		if !(lhs_val.domain_kind == IntDomainKind && lhs_val.domain_kind == rhs_val.domain_kind) {
+			write_error(node_location, fmt.Sprintf("'%s' : types of LHS and RHS are different (%s vs %s)", expr_ty, lhs_val.domain_kind, rhs_val.domain_kind))
+		}
+		result_val := lhs_val.Get_int().Lessthan(rhs_val.Get_int())
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
+	case *imp.GreaterthanExpr:
+		lhs_val := interpreter.Eval_expr(node_location, expr_ty.Lhs, abs_mem)
+		rhs_val := interpreter.Eval_expr(node_location, expr_ty.Rhs, abs_mem)
+		if !(lhs_val.domain_kind == IntDomainKind && lhs_val.domain_kind == rhs_val.domain_kind) {
+			write_error(node_location, fmt.Sprintf("'%s' : types of LHS and RHS are different (%s vs %s)", expr_ty, lhs_val.domain_kind, rhs_val.domain_kind))
+		}
+		result_val := lhs_val.Get_int().Greaterthan(rhs_val.Get_int())
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: result_val}
 	}
 	return AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
 }
@@ -155,8 +196,78 @@ func get_varname_from_lvalue(expr imp.Expr) string {
 	switch expr_ty := expr.(type) {
 	case *imp.VarExpr:
 		return expr_ty.Name
+	case *imp.ArrayIndexExpr:
+		return get_varname_from_lvalue(expr_ty.Base)
 	}
 	panic(fmt.Sprintf("get_varname_from_lvalue: unimplemented expr type %T", expr))
+}
+
+// TODO: fix this part
+// Given an lvalue expression, get the AbstractValue from the state
+func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) get_abstract_value_from_lvalue_expr(expr imp.Expr, state AbstractState[IntDomainImpl, ArrayDomainImpl]) AbstractValue[IntDomainImpl, ArrayDomainImpl] {
+	switch expr_ty := expr.(type) {
+	case *imp.VarExpr:
+		val, var_in_mem := state.abstract_mem[expr_ty.Name]
+		if !var_in_mem {
+			write_error(state.node_location, fmt.Sprintf("Variable '%s' not defined", expr_ty.Name))
+		}
+		return val
+	case *imp.LenExpr:
+		arr_val := interpreter.get_abstract_value_from_lvalue_expr(expr_ty.Subexpr, state)
+		if arr_val.domain_kind != ArrayDomainKind {
+			write_error(state.node_location, fmt.Sprintf("Called len() on a non-array value '%s'", expr_ty.Subexpr))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: arr_val.Get_array().Len()}
+	case *imp.ArrayIndexExpr:
+		arr_val := interpreter.get_abstract_value_from_lvalue_expr(expr_ty.Base, state)
+		if arr_val.domain_kind != ArrayDomainKind {
+			write_error(state.node_location, fmt.Sprintf("Tried to index a non-array value '%s'", expr_ty.Base))
+		}
+		index_val := interpreter.Eval_expr(state.node_location, expr_ty.Index, state.abstract_mem)
+		if index_val.domain_kind != ArrayDomainKind {
+			write_error(state.node_location, fmt.Sprintf("Index expression '%s' is not an integerdomain", expr_ty.Index))
+		}
+		return arr_val.Get_array().GetIndex(index_val.Get_int())
+	}
+	write_error(state.node_location, fmt.Sprintf("get_abstract_value_from_expr: Unsupported expression '%s'", expr))
+	panic("unreachable")
+}
+
+// TODO: fix this part
+// Given an lvalue expression lhs, the rhs AbstractValue, and the state, update state.abstract_mem accordingly *in-place*
+func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) set_abstract_value_from_expr(lhs imp.Expr, rhs_val AbstractValue[IntDomainImpl, ArrayDomainImpl], state *AbstractState[IntDomainImpl, ArrayDomainImpl]) {
+	switch lhs_node := lhs.(type) {
+	case *imp.VarExpr:
+		lhs_val, lhs_exists := state.abstract_mem[lhs_node.Name]
+		if lhs_exists && lhs_val.domain_kind != rhs_val.domain_kind {
+			write_error(state.node_location, fmt.Sprintf("LHS of variable %s has type %s, but RHS has type %s.", lhs_node.Name, lhs_val.domain_kind, rhs_val.domain_kind))
+		}
+		state.abstract_mem[lhs_node.Name] = rhs_val
+	case *imp.ArrayIndexExpr:
+		index_val := interpreter.Eval_expr(state.node_location, lhs_node.Index, state.abstract_mem)
+		if index_val.domain_kind != IntDomainKind {
+			write_error(state.node_location, "Only 1-dimensional arrays implemented")
+		}
+		if index_val.Get_int().IsBot() {
+			// if index is bot, don't do assignment
+			return
+		}
+		arr_varname := get_varname_from_lvalue(lhs_node.Base)
+		lhs_val, lhs_exists := state.abstract_mem[arr_varname]
+		if !lhs_exists {
+			write_error(state.node_location, fmt.Sprintf("Attempting to index nonexisting variable '%s'", arr_varname))
+		}
+		if lhs_val.domain_kind != ArrayDomainKind {
+			write_error(state.node_location, fmt.Sprintf("Attempting to index non-array variable '%s'", arr_varname))
+		}
+
+		if !index_val.Get_int().Incl(lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))) {
+			write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, lhs_val.Get_array().Len()))
+		}
+		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: lhs_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
+	default:
+		write_error(state.node_location, fmt.Sprintf("Unsupported LHS expr '%s' with type %T", lhs, lhs))
+	}
 }
 
 func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(in_state AbstractState[IntDomainImpl, ArrayDomainImpl]) []AbstractState[IntDomainImpl, ArrayDomainImpl] {
@@ -197,17 +308,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		case *imp.AssignStmt:
 			// assignment should overwrite the value, instead of join
 			rhs_val := interpreter.Eval_expr(in_state.node_location, stmt.Rhs, in_state.abstract_mem)
-			switch lhs_ty := stmt.Lhs.(type) {
-			case *imp.VarExpr:
-				_, var_exists := in_state.abstract_mem[lhs_ty.Name]
-				if var_exists {
-					if in_state.abstract_mem[lhs_ty.Name].domain_kind != rhs_val.domain_kind {
-						write_error(in_state.node_location, "LHS and RHS domain type does not match")
-						return nil
-					}
-				}
-				in_state.abstract_mem[lhs_ty.Name] = rhs_val
-			}
+			interpreter.set_abstract_value_from_expr(stmt.Lhs, rhs_val, &in_state)
 
 		case *imp.SkipStmt:
 			// do nothing
@@ -222,7 +323,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		// 	for index, fmt_str := range strings.Split(stmt.Format_string, " ") {
 		// 		switch fmt_str {
 		// 		case "%d":
-
+		// 			// integer type
 		// 		}
 		// 	}
 
@@ -239,8 +340,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		// We can just execute only the corresponding branch.
 		// Otherwise filter for each branch and join the result
 		cond_val := interpreter.Eval_expr(in_state.node_location, cfg_node.Cond_expr, in_state.abstract_mem)
-		fmt.Println("cond val", cond_val.Get_bool(), loop_widened)
-
+		fmt.Println("Eval", cfg_node.Cond_expr, "equals", cond_val)
 		// Try to represent it as SimpleProp
 		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
 		if !simpleprop_success {
@@ -255,6 +355,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 			new_state := in_state.Clone()
 			if simpleprop_success {
 				true_filters := domain.Filter_true_query_simpleprop(cond_simpleprop)
+				// TODO: This doesn't refine array lengths
 				for _, filter := range true_filters {
 					lhs_name := get_varname_from_lvalue(filter.Term_expr)
 					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
@@ -272,6 +373,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 			new_state := in_state.Clone()
 			if simpleprop_success {
 				false_filters := domain.Filter_false_query_simpleprop(cond_simpleprop)
+				// TODO: This doesn't refine array lengths
 				for _, filter := range false_filters {
 					lhs_name := get_varname_from_lvalue(filter.Term_expr)
 					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
@@ -280,8 +382,6 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
 					}
 				}
-			} else {
-				fmt.Println("false - simprop failed. Passing unfiltered state to node", cond_edge.To_false_node_loc, new_state)
 			}
 			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem})
 		}
