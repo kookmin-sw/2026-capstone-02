@@ -88,9 +88,9 @@ func (graphcreator *CFGGraphCreator) create_cfg_node(imp_ast imp.Stmt, line_num 
 	return current_node_index
 }
 
-func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast imp.Expr, line_num int) NodeID {
+func (graphcreator *CFGGraphCreator) create_cfg_cond_node(imp_ast imp.Expr, line_num int, is_loop_head bool) NodeID {
 	current_node_index := graphcreator.next_node_id
-	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Cond_expr: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_cond, Line_num: line_num}
+	graphcreator.Cfg_graph.Node_map[current_node_index] = &CFGCondNode{Cond_expr: imp_ast, Id: CFGNodeLocation{graphcreator.func_name, current_node_index}, Code: fmt.Sprintf("%s", imp_ast), Node_type: node_cond, Line_num: line_num, Is_loop_head: is_loop_head}
 	graphcreator.next_node_id++
 	return current_node_index
 }
@@ -132,7 +132,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 	var created_node_id NodeID = 0
 	switch stmt_ty := stmts[0].(type) {
 	case *imp.IfElseStmt:
-		cond_node_id := graphcreator.create_cfg_cond_node(stmt_ty.Cond, stmt_ty.GetLineNum())
+		cond_node_id := graphcreator.create_cfg_cond_node(stmt_ty.Cond, stmt_ty.GetLineNum(), false)
 
 		graphcreator.push_branch_context(cond_node_id, next_node_id)
 
@@ -160,7 +160,7 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) NodeID 
 		created_node_id = cond_node_id
 
 	case *imp.WhileStmt:
-		cond_node_id := graphcreator.create_cfg_cond_node(stmt_ty.Cond, stmt_ty.GetLineNum())
+		cond_node_id := graphcreator.create_cfg_cond_node(stmt_ty.Cond, stmt_ty.GetLineNum(), true)
 
 		graphcreator.push_loop_context(cond_node_id, next_node_id)
 		body_node_id := graphcreator.create_cfg_method(stmt_ty.Body_stmt)

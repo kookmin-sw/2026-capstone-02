@@ -172,7 +172,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		write_info(in_state.node_location, "No updates to node state")
 		return nil
 	}
-	write_update_node(in_state.node_location, global_state.String())
+	write_update_node_state(in_state.node_location, global_state.String(), "Join global memory state")
 	interpreter.abstract_mem.n_visits[in_state.node_location.Id]++
 	// Executed on the joined node state
 	in_state.abstract_mem = global_state.Clone()

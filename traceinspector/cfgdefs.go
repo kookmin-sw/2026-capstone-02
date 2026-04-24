@@ -52,11 +52,12 @@ type CFGNode struct {
 }
 
 type CFGCondNode struct {
-	Cond_expr imp.Expr `json:"-"`
-	Id        CFGNodeLocation
-	Code      string
-	Node_type node_types
-	Line_num  int
+	Cond_expr    imp.Expr `json:"-"`
+	Id           CFGNodeLocation
+	Code         string
+	Node_type    node_types
+	Line_num     int
+	Is_loop_head bool `json:"-"` // whether the cond is the head of the node
 }
 
 func (node *CFGNode) is_CFGNodeClass() {}
