@@ -291,7 +291,7 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		state_changed := global_state.Join_inplace(in_state.abstract_mem)
 		if !state_changed && interpreter.abstract_function_mem.n_visits[in_state.node_location.Id] > 0 {
 			// no updates to the state
-			write_info(in_state.node_location, fmt.Sprintf("No updates to node state %s", global_state))
+			write_info(in_state.node_location, "No updates to node state")
 			return nil
 		}
 		write_update_node_state(in_state.node_location, global_state.String(), "Join global memory state")
@@ -340,7 +340,6 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 		// We can just execute only the corresponding branch.
 		// Otherwise filter for each branch and join the result
 		cond_val := interpreter.Eval_expr(in_state.node_location, cfg_node.Cond_expr, in_state.abstract_mem)
-		fmt.Println("Eval", cfg_node.Cond_expr, "equals", cond_val)
 		// Try to represent it as SimpleProp
 		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
 		if !simpleprop_success {
@@ -357,11 +356,11 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 				true_filters := domain.Filter_true_query_simpleprop(cond_simpleprop)
 				// TODO: This doesn't refine array lengths
 				for _, filter := range true_filters {
-					lhs_name := get_varname_from_lvalue(filter.Term_expr)
 					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
 					if rhs_dom_val.domain_kind == IntDomainKind {
-						updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
-						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						updated_intdom := interpreter.get_abstract_value_from_lvalue_expr(filter.Term_expr, new_state).Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+						updated_val := AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						interpreter.set_abstract_value_from_expr(filter.Term_expr, updated_val, &new_state)
 					}
 				}
 			}
@@ -375,11 +374,11 @@ func (interpreter *ImpFunctionInterpreter[IntDomainImpl, ArrayDomainImpl]) Step(
 				false_filters := domain.Filter_false_query_simpleprop(cond_simpleprop)
 				// TODO: This doesn't refine array lengths
 				for _, filter := range false_filters {
-					lhs_name := get_varname_from_lvalue(filter.Term_expr)
 					rhs_dom_val := interpreter.Eval_expr(in_state.node_location, filter.Rhs_expr, in_state.abstract_mem)
 					if rhs_dom_val.domain_kind == IntDomainKind {
-						updated_intdom := new_state.abstract_mem[lhs_name].Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
-						new_state.abstract_mem[lhs_name] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						updated_intdom := interpreter.get_abstract_value_from_lvalue_expr(filter.Term_expr, new_state).Get_int().Filter(filter.Query_type, rhs_dom_val.Get_int())
+						updated_val := AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: updated_intdom}
+						interpreter.set_abstract_value_from_expr(filter.Term_expr, updated_val, &new_state)
 					}
 				}
 			}
