@@ -357,14 +357,24 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 			for _, val := range stmt.Args {
 				interpreter.Eval_expr(in_state, val)
 			}
-		// case *imp.ScanfStmt:
-		// 	// by default scanf initializes variables to top
-		// 	for index, fmt_str := range strings.Split(stmt.Format_string, " ") {
-		// 		switch fmt_str {
-		// 		case "%d":
-		// 			// integer type
-		// 		}
-		// 	}
+		case *imp.ScanfStmt:
+			// by default scanf initializes variables to top
+			if len(strings.Split(stmt.Format_string, " ")) != len(stmt.Assign_locations) {
+				write_error(in_state.node_location, "Scanf must have matching amount of format specifiers and assignment locations")
+			}
+			for index, fmt_str := range strings.Split(stmt.Format_string, " ") {
+				switch fmt_str {
+				case "%d":
+					// integer type
+					default_val := AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind}.Make_top()
+					interpreter.set_abstract_value_from_expr(stmt.Assign_locations[index], default_val, &in_state)
+				case "%t":
+					default_val := AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind}.Make_top()
+					interpreter.set_abstract_value_from_expr(stmt.Assign_locations[index], default_val, &in_state)
+				default:
+					write_error(in_state.node_location, fmt.Sprintf("Unknown scanf format specifier '%s'. only %%d for integers and %%t for bools allowed", fmt_str))
+				}
+			}
 		case *imp.CallStmt:
 			// the processing routine is the same as Eval_expr for CallExpr. But we just ignore the return result.
 			_ = interpreter.Eval_expr(in_state, &imp.CallExpr{Node: stmt.Node, Func_name: stmt.Func_name, Args: stmt.Args})
