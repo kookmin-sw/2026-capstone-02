@@ -6,12 +6,12 @@ import (
 )
 
 type BoolDomain struct {
-	val               bool
-	is_bottom, is_top bool
+	val            bool
+	is_bot, is_top bool
 }
 
 func (domain BoolDomain) String() string {
-	if domain.is_bottom {
+	if domain.is_bot {
 		return "⊥_bool"
 	} else if domain.is_top {
 		return "⊤_bool"
@@ -29,7 +29,15 @@ func (domain BoolDomain) IsFalse() bool {
 }
 
 func (domain BoolDomain) Clone() BoolDomain {
-	return BoolDomain{val: domain.val, is_bottom: domain.is_bottom, is_top: domain.is_top}
+	return BoolDomain{val: domain.val, is_bot: domain.is_bot, is_top: domain.is_top}
+}
+
+func (domain BoolDomain) CreateTop() BoolDomain {
+	return BoolDomain{is_top: true}
+}
+
+func (domain BoolDomain) CreateBot() BoolDomain {
+	return BoolDomain{is_bot: true}
 }
 
 func (domain BoolDomain) From_BoolLitExpr(expr imp.BoolLitExpr) BoolDomain {
@@ -37,7 +45,7 @@ func (domain BoolDomain) From_BoolLitExpr(expr imp.BoolLitExpr) BoolDomain {
 }
 
 func (domain BoolDomain) IsBot() bool {
-	return domain.is_bottom
+	return domain.is_bot
 }
 
 func (domain BoolDomain) IsTop() bool {
@@ -47,10 +55,10 @@ func (domain BoolDomain) IsTop() bool {
 func (lhs BoolDomain) Join(rhs BoolDomain) (BoolDomain, bool) {
 	if lhs.is_top || rhs.is_top {
 		return BoolDomain{is_top: true}, false
-	} else if lhs.is_bottom {
-		return BoolDomain{val: rhs.val, is_bottom: rhs.is_bottom}, rhs.is_bottom
-	} else if rhs.is_bottom {
-		return BoolDomain{val: lhs.val, is_bottom: lhs.is_bottom}, lhs.is_bottom
+	} else if lhs.is_bot {
+		return BoolDomain{val: rhs.val, is_bot: rhs.is_bot}, rhs.is_bot
+	} else if rhs.is_bot {
+		return BoolDomain{val: lhs.val, is_bot: lhs.is_bot}, lhs.is_bot
 	} else if lhs.val == rhs.val {
 		return BoolDomain{val: lhs.val}, false
 	} else {
@@ -61,11 +69,11 @@ func (lhs BoolDomain) Join(rhs BoolDomain) (BoolDomain, bool) {
 func (lhs BoolDomain) Incl(rhs BoolDomain) bool {
 	if rhs.is_top {
 		return true
-	} else if lhs.is_bottom {
+	} else if lhs.is_bot {
 		return true
 	} else if lhs.is_top {
 		return rhs.is_top
-	} else if rhs.is_bottom { // lhs concrete
+	} else if rhs.is_bot { // lhs concrete
 		return false
 	} else { // lhs = concrete, rhs = concrete
 		return lhs.val == rhs.val
@@ -73,10 +81,10 @@ func (lhs BoolDomain) Incl(rhs BoolDomain) bool {
 }
 
 func (lhs BoolDomain) Widen(rhs BoolDomain) BoolDomain {
-	if lhs.is_bottom {
+	if lhs.is_bot {
 		return rhs
 	}
-	if rhs.is_bottom {
+	if rhs.is_bot {
 		return lhs
 	}
 	if lhs.is_top || rhs.is_top {

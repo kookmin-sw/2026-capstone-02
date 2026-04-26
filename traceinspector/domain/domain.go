@@ -7,6 +7,8 @@ import (
 type AbstractDomain[DomainImpl any] interface {
 	IsBot() bool
 	IsTop() bool
+	CreateBot() DomainImpl
+	CreateTop() DomainImpl
 	Incl(DomainImpl) bool               // inclusion operator `lhs ⊑ rhs`
 	Join(DomainImpl) (DomainImpl, bool) // abstract join operator `lhs ⊔ rhs`. returns result and whether result is changed
 	Widen(DomainImpl) DomainImpl        // widening operator `lhs ▽ rhs`

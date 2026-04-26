@@ -6,7 +6,7 @@ func add1(a int) int {
 	return a + 1
 }
 
-func composite(a int, b int, c int) bool {
+func main(a int, b int, c int) bool {
 	dog := (a+c)+3*2-1 > 10
 	// 10 < (a + c) + 3 * 2 - 1
 	// 0 <= (a + c) + 3 * 2 - 1 - 10 - 1

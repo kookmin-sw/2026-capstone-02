@@ -8,6 +8,7 @@
 2. CFG Mermaid로 출력: `./traceinspector --gofile input.go --print-cfg-mermaid` 로 호출. JSON형태와 동등한 그래프를 Mermaid 코드로 출력.
 3. Go -> Imp 번역: `./traceinspector --gofile input.go --print-imp` 로 호출. 입력 Go 코드에 대응되는 Imp 코드 출력.
 4. Go -> Imp 번역 후 실행: `./traceinspector --gofile input.go --interpret-imp` 로 호출. 입력 Go 코드에 대응되는 Imp 코드 생성 후 실행(interpretation).
+5. Go -> Imp 번역 후 분석: `./traceinspector --gofile input.go`
 
 
 ## 종류별 출력 예시
@@ -55,559 +56,39 @@ generates a CFG graph for every function defined in the file.
     "main": {
         "Nodes": [
             {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 1
-                },
-                "Code": "print(quicksort(arr, 0, n - 1), #34;\\n#34;)",
-                "Node_type": "basic",
-                "Line_num": 53
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 2
-                },
-                "Code": "i < n",
+                "Id": 2,
+                "Code": "b + c \u003c= 0",
                 "Node_type": "cond",
-                "Line_num": 48
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 3
-                },
-                "Code": "i++",
-                "Node_type": "basic",
-                "Line_num": 48
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 4
-                },
-                "Code": "arr[i] = x",
-                "Node_type": "basic",
-                "Line_num": 51
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 5
-                },
-                "Code": "Scanf(%d, x)",
-                "Node_type": "basic",
-                "Line_num": 50
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 6
-                },
-                "Code": "x = 0",
-                "Node_type": "basic",
-                "Line_num": 49
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 7
-                },
-                "Code": "i = 0",
-                "Node_type": "basic",
-                "Line_num": 48
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 8
-                },
-                "Code": "arr = make_array(n, 0)",
-                "Node_type": "basic",
-                "Line_num": 47
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 9
-                },
-                "Code": "Scanf(%d, n)",
-                "Node_type": "basic",
-                "Line_num": 46
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 10
-                },
-                "Code": "n = 0",
-                "Node_type": "basic",
-                "Line_num": 45
-            }
-        ],
-        "Edges": [
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 0
-                },
-                "From_node_id": 3,
-                "To_node_id": 2,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 1
-                },
-                "From_node_id": 4,
-                "To_node_id": 3,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 2
-                },
-                "From_node_id": 5,
-                "To_node_id": 4,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 3
-                },
-                "From_node_id": 6,
-                "To_node_id": 5,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 4
-                },
-                "From_node_id": 2,
-                "To_node_id": 6,
-                "Label": "True"
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 5
-                },
-                "From_node_id": 2,
-                "To_node_id": 1,
-                "Label": "False"
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 6
-                },
-                "From_node_id": 7,
-                "To_node_id": 2,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 7
-                },
-                "From_node_id": 8,
-                "To_node_id": 7,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 8
-                },
-                "From_node_id": 9,
-                "To_node_id": 8,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "main",
-                    "Id": 9
-                },
-                "From_node_id": 10,
-                "To_node_id": 9,
-                "Label": ""
-            }
-        ]
-    },
-    "partition": {
-        "Nodes": [
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 1
-                },
-                "Code": "return i",
-                "Node_type": "basic",
-                "Line_num": 29
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 2
-                },
-                "Code": "a[hi] = tmp",
-                "Node_type": "basic",
-                "Line_num": 27
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 3
-                },
-                "Code": "a[i] = a[hi]",
-                "Node_type": "basic",
-                "Line_num": 26
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 4
-                },
-                "Code": "tmp = a[i]",
-                "Node_type": "basic",
-                "Line_num": 25
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 5
-                },
-                "Code": "j < hi",
-                "Node_type": "cond",
-                "Line_num": 12
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 6
-                },
-                "Code": "j = j + 1",
-                "Node_type": "basic",
-                "Line_num": 21
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 7
-                },
-                "Code": "a[j] < pivot",
-                "Node_type": "cond",
-                "Line_num": 13
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 8
-                },
-                "Code": "i = i + 1",
-                "Node_type": "basic",
-                "Line_num": 19
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 9
-                },
-                "Code": "a[j] = tmp",
-                "Node_type": "basic",
-                "Line_num": 17
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 10
-                },
-                "Code": "a[i] = a[j]",
-                "Node_type": "basic",
-                "Line_num": 16
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 11
-                },
-                "Code": "tmp = a[i]",
-                "Node_type": "basic",
                 "Line_num": 15
             },
             {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 12
-                },
-                "Code": "j = lo",
+                "Id": 3,
+                "Code": "c = c + 1",
                 "Node_type": "basic",
-                "Line_num": 10
+                "Line_num": 16
             },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 13
-                },
-                "Code": "i = lo",
-                "Node_type": "basic",
-                "Line_num": 9
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 14
-                },
-                "Code": "pivot = a[hi]",
-                "Node_type": "basic",
-                "Line_num": 8
-            }
+            ...
         ],
         "Edges": [
             {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 0
-                },
-                "From_node_id": 2,
-                "To_node_id": 1,
+                "Id": 0,
+                "From_node_loc": 3,
+                "To_node_loc": 1,
                 "Label": ""
             },
             {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 1
-                },
-                "From_node_id": 3,
-                "To_node_id": 2,
+                "Id": 1,
+                "From_node_loc": 4,
+                "To_node_loc": 1,
                 "Label": ""
             },
             {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 2
-                },
-                "From_node_id": 4,
-                "To_node_id": 3,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 3
-                },
-                "From_node_id": 6,
-                "To_node_id": 5,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 4
-                },
-                "From_node_id": 8,
-                "To_node_id": 6,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 5
-                },
-                "From_node_id": 9,
-                "To_node_id": 8,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 6
-                },
-                "From_node_id": 10,
-                "To_node_id": 9,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 7
-                },
-                "From_node_id": 11,
-                "To_node_id": 10,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 8
-                },
-                "From_node_id": 7,
-                "To_node_id": 11,
+                "Id": 2,
+                "From_node_loc": 2,
+                "To_node_loc": 3,
                 "Label": "True"
             },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 9
-                },
-                "From_node_id": 7,
-                "To_node_id": 6,
-                "Label": "False"
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 10
-                },
-                "From_node_id": 5,
-                "To_node_id": 7,
-                "Label": "True"
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 11
-                },
-                "From_node_id": 5,
-                "To_node_id": 4,
-                "Label": "False"
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 12
-                },
-                "From_node_id": 12,
-                "To_node_id": 5,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 13
-                },
-                "From_node_id": 13,
-                "To_node_id": 12,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "partition",
-                    "Id": 14
-                },
-                "From_node_id": 14,
-                "To_node_id": 13,
-                "Label": ""
-            }
-        ]
-    },
-    "quicksort": {
-        "Nodes": [
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 1
-                },
-                "Code": "return a",
-                "Node_type": "basic",
-                "Line_num": 41
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 2
-                },
-                "Code": "quicksort(a, p + 1, hi)",
-                "Node_type": "basic",
-                "Line_num": 40
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 3
-                },
-                "Code": "quicksort(a, lo, p - 1)",
-                "Node_type": "basic",
-                "Line_num": 39
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 4
-                },
-                "Code": "p = partition(a, lo, hi)",
-                "Node_type": "basic",
-                "Line_num": 37
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 5
-                },
-                "Code": "lo >= hi",
-                "Node_type": "cond",
-                "Line_num": 33
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 6
-                },
-                "Code": "return a",
-                "Node_type": "basic",
-                "Line_num": 34
-            }
-        ],
-        "Edges": [
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 0
-                },
-                "From_node_id": 2,
-                "To_node_id": 1,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 1
-                },
-                "From_node_id": 3,
-                "To_node_id": 2,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 2
-                },
-                "From_node_id": 4,
-                "To_node_id": 3,
-                "Label": ""
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 3
-                },
-                "From_node_id": 5,
-                "To_node_id": 6,
-                "Label": "True"
-            },
-            {
-                "Id": {
-                    "Function_name": "quicksort",
-                    "Id": 4
-                },
-                "From_node_id": 5,
-                "To_node_id": 4,
-                "Label": "False"
-            }
+            ...
         ]
     }
 }
@@ -619,78 +100,27 @@ generates a CFG graph for every function defined in the file.
 
 ```mermaid
 flowchart TD
-1["`print(quicksort(arr, 0, n - 1), #34;\n#34;)`"]
-2{"`i < n`"}
-3["`i++`"]
-4["`arr[i] = x`"]
-5["`Scanf(%d, x)`"]
-6["`x = 0`"]
-7["`i = 0`"]
-8["`arr = make_array(n, 0)`"]
-9["`Scanf(%d, n)`"]
-10["`n = 0`"]
-3 --> 2
-4 --> 3
-5 --> 4
-6 --> 5
-2 -- True --> 6
-2 -- False --> 1
-7 --> 2
-8 --> 7
-9 --> 8
-10 --> 9
-```
-
-#### partition
-
-```mermaid
-flowchart TD
-1["`return i`"]
-2["`a[hi] = tmp`"]
-3["`a[i] = a[hi]`"]
-4["`tmp = a[i]`"]
-5{"`j < hi`"}
-6["`j = j + 1`"]
-7{"`a[j] < pivot`"}
-8["`i = i + 1`"]
-9["`a[j] = tmp`"]
-10["`a[i] = a[j]`"]
-11["`tmp = a[i]`"]
-12["`j = lo`"]
-13["`i = lo`"]
-14["`pivot = a[hi]`"]
-2 --> 1
-3 --> 2
-4 --> 3
-6 --> 5
-8 --> 6
-9 --> 8
-10 --> 9
-11 --> 10
-7 -- True --> 11
-7 -- False --> 6
-5 -- True --> 7
-5 -- False --> 4
-12 --> 5
-13 --> 12
-14 --> 13
-```
-
-#### quicksort
-
-```mermaid
-flowchart TD
-1["`return a`"]
-2["`quicksort(a, p + 1, hi)`"]
-3["`quicksort(a, lo, p - 1)`"]
-4["`p = partition(a, lo, hi)`"]
-5{"`lo >= hi`"}
-6["`return a`"]
-2 --> 1
-3 --> 2
-4 --> 3
+2{"`b + c <= 0`"}
+3["`c = c + 1`"]
+5{"`a + c + b <= 5`"}
+7["`c = 0`"]
+9["`b = 2`"]
+1["`a = 1`"]
+4["`c = 10`"]
+6["`c = 10`"]
+8["`c = a + b`"]
+10["`a = 1`"]
+3 --> 1
+4 --> 1
+6 --> 2
 5 -- True --> 6
-5 -- False --> 4
+5 -- False --> 7
+2 -- True --> 3
+2 -- False --> 4
+7 --> 2
+8 --> 5
+9 --> 8
+10 --> 9
 ```
 
 ### Imp Code output
@@ -743,3 +173,34 @@ fun main() none {
 	print(quicksort(arr, 0, n - 1), "\n")
 }
 ```
+
+## 분석 결과 출력
+
+### 예시:
+```
+{"Type":"update_node","Function_name":"main","Node_id":10,"Node_state":"{}","Msg":"Join global memory state"}
+{"Type":"update_node","Function_name":"main","Node_id":5,"Node_state":"{c : [3, 3], a : [1, 1], b : [2, 2]}","Msg":"Join global memory state"}
+{"Type":"warning","Function_name":"main","Node_id":5,"Node_state":"","Msg":"Could not represent 'a + c + b <= 5' as SimpleProp. Analysis precision may severely deterioriate."}
+{"Type":"update_node","Function_name":"main","Node_id":6,"Node_state":"{b : [2, 2], c : [3, 3], a : [1, 1]}","Msg":"Join global memory state"}
+{"Type":"info","Function_name":"main","Node_id":7,"Node_state":"","Msg":"No updates to node state"}
+{"Type":"update_node","Function_name":"main","Node_id":4,"Node_state":"{c : [10, 10], a : [1, 1], b : [2, 2]}","Msg":"Join global memory state"}
+{"Type":"update_node","Function_name":"main","Node_id":3,"Node_state":"{a : [1, 1], b : ⊥, c : ⊥}","Msg":"Join global memory state"}
+{"Type":"info","Function_name":"main","Node_id":4,"Node_state":"","Msg":"No updates to node state"}
+{"Type":"update_node","Function_name":"main","Node_id":3,"Node_state":"{b : ⊥, c : ⊥, a : [1, 1]}","Msg":"Join global memory state"}
+{"Type":"update_node","Function_name":"main","Node_id":4,"Node_state":"{c : [0, 10], a : [1, 1], b : [2, 2]}","Msg":"Join global memory state"}
+{"Type":"update_node","Function_name":"main","Node_id":3,"Node_state":"{a : [1, 1], b : ⊥, c : ⊥}","Msg":"Join global memory state"}
+{"Type":"info","Function_name":"main","Node_id":4,"Node_state":"","Msg":"No updates to node state"}
+{"Type":"update_node","Function_name":"main","Node_id":1,"Node_state":"{b : ⊥, c : ⊥, a : [1, 1]}","Msg":"Join global memory state"}
+{"Type":"info","Function_name":"main","Node_id":1,"Node_state":"","Msg":"No updates to node state"}
+
+```
+
+- `Type`: 이벤트 종류
+    - `info`: 정보 출력. `Function_name, Node_id` 위치의 노드 실행중 메시지 `Msg` 발생. 정보창에 띄울것.
+    - `warning`: 워닝(오류 아님). `info`와 형식 동일함. 대신 워닝 띄우기. 오류와는 다르게 계속 실행함.
+    - `error`: 분석 진행이 불가능한 오류. `info`와 형식 동일. 오류가 발생하면 분석 종료됨(마지막 이벤트).
+    - `update_node`: `Function_name, Node_id` 위치의 노드 상태를 `Node_data`의 값으로 갱신. 동시에 정보창에 `Msg` 설명을 표시할 것(왜 이런 업데이트가 발생했는지에 대한 설명). 슬라이더에 들어가는 단위.
+- `Function_name`: 노드의 함수 이름. 
+- `Node_id`: 함수 내에서 노드 번호. 노드 번호가 0이면 존재하지 않는 노드임.
+- `Node_data`: `update_node` 이벤트 발생시 해당 노트의 상태를 이 속성의 텍스트로 변경할 것. 다른 이벤트에는 빈 스트링임.
+- `Msg`: 정보창에 띄울 정보.

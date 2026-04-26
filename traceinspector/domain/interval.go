@@ -56,7 +56,7 @@ func (domain IntervalDomain) Is_bounded() bool {
 
 func (lhs IntervalDomain) Join(rhs IntervalDomain) (IntervalDomain, bool) {
 	if lhs.is_bottom {
-		return rhs, rhs.IsBot()
+		return rhs, !rhs.IsBot()
 	}
 	if rhs.is_bottom {
 		return lhs, false
@@ -111,6 +111,14 @@ func (lhs IntervalDomain) Widen(rhs IntervalDomain) IntervalDomain {
 
 func (lhs IntervalDomain) From_IntLitExpr(expr imp.IntLitExpr) IntervalDomain {
 	return IntervalDomain{lower: algebra.ExtInt_Finite(expr.Value), upper: algebra.ExtInt_Finite(expr.Value)}
+}
+
+func (lhs IntervalDomain) CreateTop() IntervalDomain {
+	return IntervalTop()
+}
+
+func (lhs IntervalDomain) CreateBot() IntervalDomain {
+	return IntervalBot()
 }
 
 func (lhs IntervalDomain) Add(rhs IntervalDomain) IntervalDomain {
@@ -174,7 +182,7 @@ func (lhs IntervalDomain) Disjoint(rhs IntervalDomain) bool {
 
 func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if lhs.Disjoint(rhs) {
 		return BoolDomain{val: false}
@@ -189,7 +197,7 @@ func (lhs IntervalDomain) Eq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Neq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if lhs.Disjoint(rhs) {
 		return BoolDomain{val: true}
@@ -203,10 +211,7 @@ func (lhs IntervalDomain) Neq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Geq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
-	}
-	if !lhs.Disjoint(rhs) {
-		return BoolDomain{is_top: true}
+		return BoolDomain{is_bot: true}
 	}
 	// [x, y] >= [a, b] <-> b <= x /\ b, x are finite
 	if lhs.lower.IsFinite() && rhs.upper.IsFinite() && rhs.upper.Leq(lhs.lower) {
@@ -217,7 +222,7 @@ func (lhs IntervalDomain) Geq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
@@ -231,10 +236,7 @@ func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
-	}
-	if !lhs.Disjoint(rhs) {
-		return BoolDomain{is_top: true}
+		return BoolDomain{is_bot: true}
 	}
 	// [x, y] <= [a, b] <-> y <= a /\ y, a are finite
 	if lhs.upper.IsFinite() && rhs.lower.IsFinite() && lhs.upper.Leq(rhs.lower) {
@@ -245,7 +247,7 @@ func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Lessthan(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bottom: true}
+		return BoolDomain{is_bot: true}
 	}
 	if !lhs.Disjoint(rhs) {
 		return BoolDomain{is_top: true}
