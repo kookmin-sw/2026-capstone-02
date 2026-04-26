@@ -41,6 +41,18 @@ type AbstractValue[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomai
 	array_domain ArrayDomainImpl
 }
 
+func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Make_bot() AbstractValue[IntDomainImpl, ArrayDomainImpl] {
+	switch val.domain_kind {
+	case IntDomainKind:
+		val.int_domain = val.Get_int().CreateBot()
+	case BoolDomainKind:
+		val.bool_domain = val.Get_bool().CreateBot()
+	case ArrayDomainKind:
+		val.array_domain = val.Get_array().CreateBot()
+	}
+	return val
+}
+
 func (val AbstractValue[IntDomainImpl, ArrayDomainImpl]) Get_int() IntDomainImpl {
 	if val.domain_kind != IntDomainKind {
 		panic(fmt.Sprintf("Attempted to get non-intkind(%s) abstractvalue as int", val.domain_kind))
@@ -203,11 +215,11 @@ func (func_mem *AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]) Initialize(
 	}
 	switch function_def.Return_type.(type) {
 	case imp.IntType:
-		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind}
+		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind}.Make_bot()
 	case imp.BoolType:
-		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind}
+		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind}.Make_bot()
 	case imp.ArrayType:
-		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind}
+		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind}.Make_bot()
 	default:
 		func_mem.return_value = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: InvalidKind}
 	}

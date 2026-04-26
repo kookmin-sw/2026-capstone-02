@@ -333,7 +333,10 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 		case *imp.ContinueStmt:
 			// do nothing; follows CFG edge
 		case *imp.PrintStmt:
-			// do nothing to state; follows CFG edge
+			// eval subexprs and follow CFG edge
+			for _, val := range stmt.Args {
+				interpreter.Eval_expr(in_state.node_location, val, in_state.abstract_mem)
+			}
 		// case *imp.ScanfStmt:
 		// 	// by default scanf initializes variables to top
 		// 	for index, fmt_str := range strings.Split(stmt.Format_string, " ") {
@@ -428,10 +431,13 @@ type AbstractAnalyzer[IntDom domain.IntegerDomain[IntDom], ArrDom ArrayDomain[In
 	function_pre_mem_map map[imp.ImpFunctionName]*AbstractFunctionMem[IntDom, ArrDom] // map from function name to pre-states
 }
 
+func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Initialize() {
+	analyzer.function_pre_mem_map = make(map[imp.ImpFunctionName]*AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl])
+}
+
 // Perform abstract interpretation/analysis on the given function, setting the pre-node state of the entry node as initial_node_mem
 // Returns the abstract return value
 func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Interpret_function(function_def imp.ImpFunction, initial_node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) AbstractValue[IntDomainImpl, ArrayDomainImpl] {
-	analyzer.function_pre_mem_map = make(map[imp.ImpFunctionName]*AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl])
 	function_name := function_def.Name
 	analyzer.function_pre_mem_map[function_name] = &AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]{}
 	analyzer.function_pre_mem_map[function_name].Initialize(function_def, analyzer.Function_cfgs[function_name], initial_node_mem)
@@ -458,6 +464,7 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 		Intdomain_default:   domain.IntervalDomain{},
 		Arraydomain_default: ArraySummaryDomain[domain.IntervalDomain]{},
 	}
+	g.Initialize()
 	g.Interpret_function(func_info_map["main"], nil)
 	fmt.Println("Finished. Final state:")
 	for key, val := range g.function_pre_mem_map {
@@ -474,14 +481,12 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 		fmt.Println(fun_name)
 		updated_nodes := make(map[NodeID]CFGNodeClass)
 		for node_id, node_state := range val.pre_mem_node_map {
-			fmt.Println(node_id)
 			switch node := func_cfg_map[fun_name].Node_map[node_id].(type) {
 			case *CFGNode:
 				updated_nodes[node_id] = &CFGNode{Id: node.Id, Code: node_state.String() + "\n" + node.Code, Node_type: node.Node_type}
 			case *CFGCondNode:
 				updated_nodes[node_id] = &CFGCondNode{Id: node.Id, Code: node_state.String() + "\n" + node.Code, Node_type: node.Node_type}
 			}
-			fmt.Println(updated_nodes[node_id])
 		}
 		func_cfg_map[fun_name].Node_map = updated_nodes
 		fmt.Println("```")

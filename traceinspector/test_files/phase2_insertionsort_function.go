@@ -2,19 +2,13 @@
 
 package main
 
-func main() {
-	n := 10
-	arr := make_array(n, 0)
-	for i := 0; i < n; i++ {
-		arr[i] = 10 - i
-	}
-
+func insertionSort(arr []int) []int {
 	i := 1
 
 	for i < len(arr) {
 		key := arr[i]
-		// j := i - 1 // correct
-		j := i // index error
+		// j := i - 1
+		j := i
 
 		for j >= 0 {
 			cur := arr[j]
@@ -31,5 +25,15 @@ func main() {
 		i = i + 1
 	}
 
-	Print(arr)
+	return arr
+}
+
+func main() {
+	n := 10
+	arr := make_array(n, 0)
+	for i := 0; i < n; i++ {
+		arr[i] = 10 - i
+	}
+
+	Print(insertionSort(arr))
 }
