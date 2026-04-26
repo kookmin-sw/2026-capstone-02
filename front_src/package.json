@@ -4,15 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "nodemon -w src/server -x tsx src/server/main.ts",
+    "start": "cross-env NODE_ENV=production tsx src/server/main.ts",
+    "build": "vite build"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-go": "^6.0.1",
+    "@codemirror/lang-json": "^6.0.2",
     "@codemirror/language": "^6.12.3",
     "@codemirror/lint": "^6.9.5",
     "@codemirror/merge": "^6.12.1",
@@ -20,24 +20,32 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
     "@fsegurai/codemirror-theme-nord": "^6.2.5",
-    "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
     "codemirror": "^6.0.2",
-    "express": "^5.2.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "cors": "^2.8.6",
+    "cross-env": "^7.0.3",
+    "express": "^5.1.0",
+    "multer": "^2.1.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vite-express": "*"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@types/node": "^24.12.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.15.2",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "nodemon": "^3.1.10",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
-    "vite": "^8.0.1"
+    "vite": "^6.3.3"
   }
 }

@@ -1,0 +1,21 @@
+
+@font-face {
+    src: url(../ttf/CascadiaMono-SemiBold.ttf);
+    font-family: CascadiaMono;
+}
+
+* {
+    font-family: CascadiaMono;
+    font-weight: bold;
+    box-sizing: border-box;
+    background-color: #2E3440;
+    color: #8FBCBB;
+}
+
+body {
+    margin: 2%;
+}
+
+hr {
+    border: 2px solid #8FBCBB;
+}

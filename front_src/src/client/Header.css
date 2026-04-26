@@ -1,0 +1,22 @@
+
+#headTitleBox {
+    float: left;
+}
+
+#headTitle {
+    font-size: 48px;
+    width: 50%;
+    float: left;
+}
+
+#headButtonBox {
+    float: right;
+}
+
+.headButtons {
+    font-size: 36px;
+    border: 2px solid #8FBCBB;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+}
