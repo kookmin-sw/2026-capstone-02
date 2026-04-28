@@ -220,7 +220,6 @@ function App() {
 
                 tabNames.current.push(outFuncsName);
 
-                outMermaid += `---\ntitle: ${outFuncsName}\n---\n`
                 outMermaid += `flowchart TB\n`;
 
                 const outNodes = outFuncs.Nodes;
