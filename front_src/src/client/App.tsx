@@ -204,7 +204,7 @@ function App() {
             console.log(`Inspection success!\n`);
             alert(`Inspection success!\n`);
 
-            // Print json file to debug
+            // Print JSON file to debug
             outputViewRef.current?.dispatch({
                 changes: {
                     from: 0,
@@ -218,7 +218,7 @@ function App() {
             let outMermaid: string = "";
             let outMermaids: Array<string> = [];
 
-            // Convert to mermaidJS
+            // Convert JSON to mermaidJS
             for (const outFuncsName in output) {
                 const outFuncs = output[outFuncsName];
 
@@ -226,9 +226,29 @@ function App() {
 
                 outMermaid += `flowchart TB\n`;
 
-                const outNodes = outFuncs.Nodes;
-                const outEdges = outFuncs.Edges;
+                // Clone and sort outNodes
+                const outNodes = [...outFuncs.Nodes].sort((a, b) => {
+                    const ai = Number(a.Id);
+                    const bi = Number(b.Id);
 
+                    if (Number.isNaN(ai) || Number.isNaN(bi))
+                        return String(a.Id).localeCompare(String(b.Id));
+
+                    return ai - bi;
+                });
+
+                // Clone and sort outEdges
+                const outEdges = [...outFuncs.Edges].sort((a, b) => {
+                    const ai = Number(a.Id);
+                    const bi = Number(b.Id);
+
+                    if (Number.isNaN(ai) || Number.isNaN(bi))
+                        return String(a.Id).localeCompare(String(b.Id));
+
+                    return ai - bi;
+                });
+
+                // Convert outNodes to mermaidJS
                 for (let i = 0; i < outNodes.length; i++) {
                     const outNodeID = outNodes[i].Id;
                     const outNodeCode = outNodes[i].Code;
@@ -247,8 +267,8 @@ function App() {
                     outMermaid += `\n`;
                 }
 
+                // Convert outEdges to mermaidJS
                 for (let i = 0; i < outEdges.length; i++) {
-                    // const outEdgeID = outEdges[i].Id;
                     const outEdgeCond = outEdges[i].Label;
                     const outEdgeFrom = outEdges[i].From_node_loc;
                     const outEdgeDest = outEdges[i].To_node_loc;
