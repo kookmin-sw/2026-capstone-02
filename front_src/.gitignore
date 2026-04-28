@@ -23,5 +23,6 @@ package-lock.json
 *.esproj*
 *.slnx
 
+bin/*
 go/*
 json/*

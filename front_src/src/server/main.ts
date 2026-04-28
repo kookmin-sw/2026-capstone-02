@@ -56,14 +56,14 @@ const upload = multer({ storage });
 // Get file from client
 app.post("/upload", upload.single("file"), (req, res) => {
     if (!req.file)
-        return res.status(400).json({ error: "No file uploaded" });
+        return res.status(400).json({ error: "No file uploaded!" });
 
     const savedName = req.file.filename;
     const savedPath = req.file.path;
 
     if (!savedName.toLowerCase().endsWith(".go")) {
         fs.unlink(savedPath, () => { });
-        return res.status(400).json({ error: "Only .go files are allowed" });
+        return res.status(400).json({ error: "Only .go files are allowed!" });
     }
 
     res.json({ savedAs: savedName, path: savedPath });
@@ -73,7 +73,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
 app.get("/run", async (_req, res) => {
     try {
         await new Promise<void>((resolve, reject)=>  {
-            exec(`${PROGRAM_PATH} --print-cfg-json --gofile ${UPLOAD_PATH} > ${OUTPUT_PATH} 2>&1`, null, (error, stdout, stderr) => {
+            exec(`${PROGRAM_PATH} --print-cfg-json --gofile ${UPLOAD_PATH} > ${OUTPUT_PATH} 2>&1`, null, (error, _stdout, stderr) => {
                 if (error) {
                     reject(new Error(`${stderr || error.message}`));
                 } else {
@@ -83,7 +83,7 @@ app.get("/run", async (_req, res) => {
         });
 
         if (!fs.existsSync(OUTPUT_PATH)) {
-            return res.status(400).json({ error: "Program did not generate output.json" });
+            return res.status(400).json({ error: "Program cannot generate JSON!" });
         }
 
         const jsonData = fs.readFileSync(OUTPUT_PATH, "utf-8");
@@ -96,12 +96,12 @@ app.get("/run", async (_req, res) => {
 
     } catch (err: any) {
         res.status(500).json({
-            error: "Execution failed",
+            error: "Inspection failed!",
             message: err.message
         });
     }
 });
 
 ViteExpress.listen(app, port, () =>
-    console.log(`Server is listening on ${port}...`),
+    console.log(`\nServer is listening on ${port}...\n`),
 );

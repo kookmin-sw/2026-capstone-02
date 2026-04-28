@@ -11,15 +11,53 @@ import { go } from "@codemirror/lang-go";
 import { json } from "@codemirror/lang-json";
 import { nord } from "@fsegurai/codemirror-theme-nord";
 
+import mermaid from "mermaid";
+
 function App() {
     const codeEditorRef = useRef<HTMLDivElement>(null);
-    const outputEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
+
+    const tabNames = useRef<string[]>([]);
+    const [activeTab, setActiveTab] = useState<number>(-1);
+
+    const mermaidRef = useRef<HTMLDivElement>(null);
+    const [mermaids, setMermaids] = useState<string[]>([]);
+
+    const outputEditorRef = useRef<HTMLDivElement>(null);
     const outputViewRef = useRef<EditorView>(null);
 
     const fileRef = useRef<File>(null);
-    const [fileContent, setFileContent] = useState<string>("");
-    const [fileName, setFileName] = useState<string>("");
+    const [_fileContent, setFileContent] = useState<string>("");
+    const [_fileName, setFileName] = useState<string>("");
+
+    // Initialize mermaid functionality
+    useEffect(() => {
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: "dark" });
+    }, []);
+
+    // Render flowchart for the active tab
+    const renderMermaid = (index: number) => {
+        if (!mermaidRef.current) return;
+
+        const mermaidId = `mermaid-${index}`;
+
+        mermaidRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid">${mermaids[index] || ""}</div>`;
+
+        try {
+            mermaid.init(undefined, `#${mermaidId}`);
+        } catch (err) {
+            console.error(`Mermaid render error!\n${err}`);
+        }
+    };
+
+    // Call function to render flowchart by condition
+    useEffect(() => {
+        if (activeTab >= 0 && mermaids.length > activeTab) {
+            renderMermaid(activeTab);
+        } else if (mermaids.length === 0 && mermaidRef.current) {
+            mermaidRef.current.innerHTML = "";
+        }
+    }, [activeTab, mermaids]);
 
     // Create code editor view
     useEffect(() => {
@@ -109,7 +147,7 @@ function App() {
     // Upload file to server
     const handleFileUpload = async () => {
         if (!fileRef.current) {
-            alert("No file selected");
+            alert("No file selected!");
             return;
         }
 
@@ -134,15 +172,15 @@ function App() {
             alert(`Upload success!\n${data}`);
 
         } catch (err) {
-            console.error("Upload error!\n", err);
-            alert("Upload error!");
+            console.error(`Upload error!\n${err}`);
+            alert(`Upload error\n${err}`);
         }
     };
 
     // Run inspector and print
     const handleRunInspection = async () => {
         if (!fileRef.current) {
-            alert("No file selected");
+            alert("No file selected!");
             return;
         }
 
@@ -152,29 +190,86 @@ function App() {
             });
 
             if (!res.ok) {
-                const err = await res.text();
-                console.error(`Inspection failed!\n${err}`);
-                alert(`Inspection failed!\n${err}`);
+                await res.text();
+                console.error(`Inspection failed!\n`);
+                alert(`Inspection failed!\n`);
                 return;
             }
 
             const data = await res.json();
-            console.log(`Inspection success!\n${data.output}`);
-            alert(`Inspection success!\n${data.output}`);
+            console.log(`Inspection success!\n`);
+            alert(`Inspection success!\n`);
 
-            const jsonString = JSON.stringify(data, null, 4);
-
+            // Print json file to debug
             outputViewRef.current?.dispatch({
                 changes: {
                     from: 0,
                     to: outputViewRef.current.state.doc.length,
-                    insert: jsonString
+                    insert: JSON.stringify(data, null, 4)
                 }
             });
 
-        } catch (err) {
-            console.error("Inspection error!\n", err);
-            alert("Inspection error!");
+            const output = data.output;
+
+            let outMermaid: string = "";
+            let outMermaids: Array<string> = [];
+
+            // Convert to mermaidJS
+            for (const outFuncsName in output) {
+                const outFuncs = output[outFuncsName];
+
+                tabNames.current.push(outFuncsName);
+
+                outMermaid += `---\ntitle: ${outFuncsName}\n---\n`
+                outMermaid += `flowchart TB\n`;
+
+                const outNodes = outFuncs.Nodes;
+                const outEdges = outFuncs.Edges;
+
+                for (let i = 0; i < outNodes.length; i++) {
+                    const outNodeID = outNodes[i].Id;
+                    const outNodeCode = outNodes[i].Code;
+                    const outSafeCode = outNodeCode.replaceAll("`", "#96;").replaceAll("\"", "#34;");
+                    const outNodeType = outNodes[i].Node_type;
+
+                    outMermaid += `    id${outNodeID}`
+
+                    if (outNodeType === "basic") {
+                        outMermaid += `[\"\`${outSafeCode}\`\"]`;
+                    }
+                    else if (outNodeType === "cond") {
+                        outMermaid += `{\"\`${outSafeCode}\`\"}`;
+                    }
+
+                    outMermaid += `\n`;
+                }
+
+                for (let i = 0; i < outEdges.length; i++) {
+                    // const outEdgeID = outEdges[i].Id;
+                    const outEdgeCond = outEdges[i].Label;
+                    const outEdgeFrom = outEdges[i].From_node_loc;
+                    const outEdgeDest = outEdges[i].To_node_loc;
+
+                    outMermaid += `    id${outEdgeFrom} `;
+                    outMermaid += outEdgeCond !== "" ? `-- ${outEdgeCond} --> ` : `--> `;
+                    outMermaid += `id${outEdgeDest}\n`;
+                }
+
+                outMermaids.push(outMermaid);
+                outMermaid = "";
+            }
+
+            console.log(outMermaids);
+
+            // Set mermaids to globally
+            setMermaids(outMermaids);
+
+            // Set default tab
+            setActiveTab(outMermaids.length ? 0 : -1);
+            
+        } catch (_err) {
+            console.error(`Inspection error!\n`);
+            alert(`Inspection error!\n`);
         }
     };
 
@@ -194,7 +289,19 @@ function App() {
             </header>
             <main>
                 <div ref={codeEditorRef} className="mainBoxes" id="codeBox"></div>
-                <div className="mainBoxes" id="graphBox"></div>
+                <div className="mainBoxes" id="mermaidBox">
+                    {mermaids.length > 1 && (
+                        <div className="mermaid-tabs">
+                            {mermaids.map((_callback, index) => (
+                                <button key={index} className={index === activeTab ? "tab active" : "tab"} onClick={() => setActiveTab(index)}>
+                                    {`${tabNames.current[index]}`}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <div ref={mermaidRef} className="mermaid-container" />
+                </div>
                 <div ref={outputEditorRef} className="mainBoxes" id="logBox"></div>
             </main>
             <footer>
