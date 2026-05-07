@@ -44,3 +44,20 @@
     width: 100%;
     height: 68vh;
 }
+
+#logBox {
+    overflow: auto;
+}
+
+.debug-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.debug-table th,
+.debug-table td,
+.debug-table tr {
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    text-align: left;
+}

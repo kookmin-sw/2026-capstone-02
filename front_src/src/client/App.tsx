@@ -8,12 +8,27 @@ import { useState, useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
 import { go } from "@codemirror/lang-go";
-import { json } from "@codemirror/lang-json";
 import { nord } from "@fsegurai/codemirror-theme-nord";
 
 import mermaid from "mermaid";
 
 function App() {
+    class Debug_t {
+        type: string;
+        funcName: string;
+        nodeID: number;
+        nodeState: string;
+        message: string;
+
+        constructor(type: string, funcName: string, nodeID: number, nodeState: string, message: string) {
+            this.type = type;
+            this.funcName = funcName;
+            this.nodeID = nodeID;
+            this.nodeState = nodeState;
+            this.message = message;
+        }
+    };
+
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
 
@@ -23,8 +38,8 @@ function App() {
     const mermaidRef = useRef<HTMLDivElement>(null);
     const [mermaids, setMermaids] = useState<string[]>([]);
 
-    const outputEditorRef = useRef<HTMLDivElement>(null);
-    const outputViewRef = useRef<EditorView>(null);
+    const debugRef = useRef<HTMLTableElement>(null);
+    const [_debugs, setDebugs] = useState<Debug_t[]>([]);
 
     const fileRef = useRef<File>(null);
     const [_fileContent, setFileContent] = useState<string>("");
@@ -81,30 +96,6 @@ function App() {
         });
 
         codeViewRef.current = view;
-
-        return () => {
-            view.destroy();
-        };
-    }, []);
-
-    // Create output editor view
-    useEffect(() => {
-        if (!outputEditorRef.current) return;
-
-        const view = new EditorView({
-            doc: "",
-            parent: outputEditorRef.current,
-            extensions: [
-                basicSetup,
-                EditorState.readOnly.of(true),
-                EditorView.editable.of(false),
-                EditorView.contentAttributes.of({ tabindex: "0" }),
-                json(),
-                nord
-            ]
-        });
-
-        outputViewRef.current = view;
 
         return () => {
             view.destroy();
@@ -195,23 +186,14 @@ function App() {
 
             if (!res.ok) {
                 await res.text();
-                console.error(`Inspection failed!\n`);
-                alert(`Inspection failed!\n`);
+                console.error(`Flowchart generation failed!\n`);
+                alert(`Flowchart generation failed!\n`);
                 return;
             }
 
             const data = await res.json();
-            console.log(`Inspection success!\n`);
-            alert(`Inspection success!\n`);
-
-            // Print JSON file to debug
-            outputViewRef.current?.dispatch({
-                changes: {
-                    from: 0,
-                    to: outputViewRef.current.state.doc.length,
-                    insert: JSON.stringify(data, null, 4)
-                }
-            });
+            console.log(`Flowchart generation success!\n`);
+            alert(`Flowchart generation success!\n`);
 
             const output = data.output;
 
@@ -295,8 +277,101 @@ function App() {
             setActiveTab(outMermaids.length ? 0 : -1);
 
         } catch (_err) {
-            console.error(`Inspection error!\n`);
-            alert(`Inspection error!\n`);
+            console.error(`Flowchart generation error!\n`);
+            alert(`Flowchart generation error!\n`);
+        }
+    };
+
+    // Run inspector again and print debug
+    const handlePrintDebug = async () => {
+        if (!fileRef.current) {
+            alert("No file selected!");
+            return;
+        }
+
+        try {
+            const res = await fetch("/debug", {
+                method: "GET"
+            });
+
+            if (!res.ok) {
+                await res.text();
+                console.error(`Debug output generation failed!\n`);
+                alert(`Debug output generation failed!\n`);
+                return;
+            }
+
+            const data = await res.json();
+            console.log(`Debug output generation success!\n`);
+            alert(`Debug output generation success!\n`);
+
+            const output = data.output;
+
+            let outDebugs: Array<Debug_t> = [];
+
+            // Convert JSON to array of debug objects
+            if (output.Debugs) {
+                for (let i = 0; i < output.Debugs.length; i++) {
+                    const outType: string = output.Debugs[i].Type;
+                    const outFuncName: string = output.Debugs[i].Function_name;
+                    const outNodeID: number = output.Debugs[i].Node_id;
+                    const outNodeState: string = output.Debugs[i].Node_state;
+                    const outMessage: string = output.Debugs[i].Msg;
+
+                    outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage));
+                }
+
+                // Set debug objects to globally
+                setDebugs(outDebugs);
+
+                // Get HTML div element
+                const logBox = document.getElementById("logBox");
+
+                if (logBox) {
+                    // Clear previous content
+                    logBox.innerHTML = "";
+
+                    // Create HTML table
+                    const table = document.createElement("table");
+                    table.className = "debug-table";
+
+                    // Initialize reference to table
+                    debugRef.current = table as HTMLTableElement;
+
+                    // Create thead
+                    const thead = table.createTHead();
+                    const headerRow = thead.insertRow();
+                    ["Type", "Function", "Message"].forEach((h) => {
+                        const th = document.createElement("th");
+                        th.textContent = h;
+                        headerRow.appendChild(th);
+                    });
+
+                    // Create tbody
+                    const tbody = table.createTBody();
+
+                    // Append rows
+                    for (let i = 0; i < outDebugs.length; i++) {
+                        if (outDebugs[i].type !== "update_node") {
+                            const row = tbody.insertRow();
+                            const cType = row.insertCell();
+                            const cFuncName = row.insertCell();
+                            const cMessage = row.insertCell();
+
+                            cType.textContent = outDebugs[i].type;
+                            cFuncName.textContent = outDebugs[i].funcName;
+                            cMessage.textContent = outDebugs[i].message;
+                        }
+                    }
+
+                    // Append table to logBox
+                    logBox.appendChild(table);
+                }
+            }
+
+        } catch (_err) {
+            console.error(`Debug output generation error!\n`);
+            alert(`Debug output generation error!\n`);
         }
     };
 
@@ -314,8 +389,8 @@ function App() {
             // Run inspector and print mermaids
             handlePrintMermaids();
 
-            // Run inspector again and print debug
-            // handlePrintDebug();
+            // Run inspector and print debug
+            handlePrintDebug();
             
         } catch (_err) {
             console.error(`Inspection error!\n`);
@@ -351,7 +426,7 @@ function App() {
 
                     <div ref={mermaidRef} className="mermaid-container" />
                 </div>
-                <div ref={outputEditorRef} className="mainBoxes" id="logBox"></div>
+                <div className="mainBoxes" id="logBox"></div>
             </main>
             <footer>
                 <div id="placeholder"></div>

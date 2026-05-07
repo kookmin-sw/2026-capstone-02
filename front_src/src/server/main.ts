@@ -21,15 +21,18 @@ const __dirname = path.dirname(__filename);
 const UPLOAD_DIR = path.resolve(__dirname, "../../go");
 const PROGRAM_DIR = path.resolve(__dirname, "../../bin");
 const OUTPUT_DIR = path.resolve(__dirname, "../../json");
+const DEBUG_DIR = path.resolve(__dirname, "../../json");
 
 const UPLOAD_NAME = "source.go";
 const PROGRAM_NAME = (os.platform() == "win32") ? "traceinspector.exe" : "traceinspector.o";
 
 const OUTPUT_NAME = "output.json";
+const DEBUG_NAME = "debug.json";
 
 const UPLOAD_PATH = path.join(UPLOAD_DIR, UPLOAD_NAME);
 const PROGRAM_PATH = path.join(PROGRAM_DIR, PROGRAM_NAME);
 const OUTPUT_PATH = path.join(OUTPUT_DIR, OUTPUT_NAME);
+const DEBUG_PATH = path.join(DEBUG_DIR, DEBUG_NAME);
 
 if (!fs.existsSync(UPLOAD_DIR))
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -91,6 +94,39 @@ app.get("/run", async (_req, res) => {
 
         res.json({
             savedAs: OUTPUT_NAME,
+            output: parsedData
+        });
+
+    } catch (err: any) {
+        res.status(500).json({
+            error: "Inspection failed!",
+            message: err.message
+        });
+    }
+});
+
+// Run inspection again and return to client
+app.get("/debug", async (_req, res) => {
+    try {
+        await new Promise<void>((resolve, reject) => {
+            exec(`${PROGRAM_PATH} --gofile ${UPLOAD_PATH} > ${DEBUG_PATH} 2>&1`, null, (error, _stdout, stderr) => {
+                if (error) {
+                    reject(new Error(`${stderr || error.message}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        if (!fs.existsSync(DEBUG_PATH)) {
+            return res.status(400).json({ error: "Program cannot generate JSON!" });
+        }
+
+        const jsonData = fs.readFileSync(DEBUG_PATH, "utf-8");
+        const parsedData = JSON.parse(jsonData);
+
+        res.json({
+            savedAs: DEBUG_NAME,
             output: parsedData
         });
 
