@@ -1,3 +1,3 @@
 theme: jekyll-theme-minimal
 title: TraceInspector
-description: Testing
+description: A visualizing interactive static analyzer for imperative languages, based on abstract interpretation
