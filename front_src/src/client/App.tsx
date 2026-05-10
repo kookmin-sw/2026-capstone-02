@@ -12,22 +12,75 @@ import { nord } from "@fsegurai/codemirror-theme-nord";
 
 import mermaid from "mermaid";
 
-function App() {
-    class Debug_t {
-        type: string;
-        funcName: string;
-        nodeID: number;
-        nodeState: string;
-        message: string;
+class Node_t {
+    id: number;
+    code: string;
+    type: string;
+    line: number;
+    state: string;
 
-        constructor(type: string, funcName: string, nodeID: number, nodeState: string, message: string) {
-            this.type = type;
-            this.funcName = funcName;
-            this.nodeID = nodeID;
-            this.nodeState = nodeState;
-            this.message = message;
-        }
-    };
+    constructor(id: number, code: string, type: string, line: number, state: string = "") {
+        this.id = id;
+        this.code = code;
+        this.type = type;
+        this.line = line;
+        this.state = state;
+    }
+};
+
+class Edge_t {
+    id: number;
+    from: number;
+    dest: number;
+    cond: string;
+
+    constructor(id: number, from: number, dest: number, cond: string) {
+        this.id = id;
+        this.from = from;
+        this.dest = dest;
+        this.cond = cond;
+    }
+};
+
+class Func_t {
+    name: string;
+    nodes: Array<Node_t>;
+    edges: Array<Edge_t>;
+
+    constructor(name: string, nodes: Array<Node_t> = [], edges: Array<Edge_t> = []) {
+        this.name = name;
+        this.nodes = nodes;
+        this.edges = edges;
+    }
+};
+
+class Mermaid_t {
+    functions: Array<Func_t>;
+
+    constructor(functions: Array<Func_t>) {
+        this.functions = functions;
+    }
+};
+
+class Debug_t {
+    type: string;
+    funcName: string;
+    nodeID: number;
+    nodeState: string;
+    message: string;
+    lineNum: number;
+
+    constructor(type: string, funcName: string, nodeID: number, nodeState: string, message: string, lineNum: number) {
+        this.type = type;
+        this.funcName = funcName;
+        this.nodeID = nodeID;
+        this.nodeState = nodeState;
+        this.message = message;
+        this.lineNum = lineNum;
+    }
+};
+
+function App() {
 
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
@@ -35,11 +88,13 @@ function App() {
     const tabNames = useRef<string[]>([]);
     const [activeTab, setActiveTab] = useState<number>(-1);
 
-    const mermaidRef = useRef<HTMLDivElement>(null);
-    const [mermaids, setMermaids] = useState<string[]>([]);
+    const mermaidRef = useRef<Mermaid_t>(null);
+    const mermaidSrcRef = useRef<HTMLDivElement>(null);
+    const [mermaidSrcs, setMermaidSrcs] = useState<string[]>([]);
 
-    const debugRef = useRef<HTMLTableElement>(null);
-    const [_debugs, setDebugs] = useState<Debug_t[]>([]);
+    const [updateNodeSteps, setUpdateNodeSteps] = useState<Debug_t[]>([]);
+    const [mermaidSrcsWithState, setMermaidSrcsWithState] = useState<string[]>([]);
+    const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
     const fileRef = useRef<File>(null);
     const [_fileContent, setFileContent] = useState<string>("");
@@ -54,29 +109,34 @@ function App() {
         });
     }, []);
 
-    // Render flowchart for the active tab
-    const renderMermaid = (index: number) => {
-        if (!mermaidRef.current) return;
-
-        const mermaidId = `mermaid-${index}`;
-
-        mermaidRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid">${mermaids[index] || ""}</div>`;
-
-        try {
-            mermaid.init(undefined, `#${mermaidId}`);
-        } catch (err) {
-            console.error(`Mermaid render error!\n${err}`);
-        }
-    };
-
     // Call function to render flowchart by condition
     useEffect(() => {
-        if (activeTab >= 0 && mermaids.length > activeTab) {
-            renderMermaid(activeTab);
-        } else if (mermaids.length === 0 && mermaidRef.current) {
-            mermaidRef.current.innerHTML = "";
+        if (mermaidSrcs.length === 0) {
+            if (mermaidSrcRef.current) {
+                mermaidSrcRef.current.innerHTML = "";
+            }
+            return;
         }
-    }, [activeTab, mermaids]);
+
+        // If debug step mode is active, do not render normal charts
+        if (updateNodeSteps.length > 0) {
+            return;
+        }
+
+        if (activeTab >= 0 && activeTab < mermaidSrcs.length) {
+            renderMermaid(activeTab, false);
+        }
+    }, [activeTab, mermaidSrcs, updateNodeSteps]);
+
+    useEffect(() => {
+        if (
+            updateNodeSteps.length > 0 &&
+            currentStepIndex >= 0 &&
+            currentStepIndex < mermaidSrcsWithState.length
+        ) {
+            renderMermaid(currentStepIndex, true);
+        }
+    }, [currentStepIndex, mermaidSrcsWithState]);
 
     // Create code editor view
     useEffect(() => {
@@ -162,10 +222,6 @@ function App() {
                 return;
             }
 
-            const data = await res.text();
-            console.log(`Upload success!\n${data}`);
-            alert(`Upload success!\n${data}`);
-
         } catch (err) {
             console.error(`Upload error!\n${err}`);
             alert(`Upload error\n${err}`);
@@ -192,23 +248,24 @@ function App() {
             }
 
             const data = await res.json();
-            console.log(`Flowchart generation success!\n`);
-            alert(`Flowchart generation success!\n`);
-
             const output = data.output;
 
-            let outMermaid: string = "";
-            let outMermaids: Array<string> = [];
+            let convMermaidSrc: string = "";
+            let convMermaidSrcs: Array<string> = [];
+            let convFuncs: Array<Func_t> = [];
 
             tabNames.current = [];
 
-            // Convert JSON to mermaidJS
+            // Convert JSON to mermaid objects
             for (const outFuncsName in output) {
                 const outFuncs = output[outFuncsName];
 
                 tabNames.current.push(outFuncsName);
 
-                outMermaid += `flowchart TB\n`;
+                convMermaidSrc += `flowchart TB\n`;
+
+                let convNodes: Array<Node_t> = [];
+                let convEdges: Array<Edge_t> = [];
 
                 if (outFuncs.Nodes) {
                     // Clone and sort outNodes
@@ -222,23 +279,26 @@ function App() {
                         return ai - bi;
                     });
 
-                    // Convert outNodes to mermaidJS
+                    // Convert outNodes to node object
                     for (let i = 0; i < outNodes.length; i++) {
                         const outNodeID = outNodes[i].Id;
                         const outNodeCode = outNodes[i].Code;
                         const outSafeCode = outNodeCode.replaceAll("`", "#96;").replaceAll("\"", "#34;");
                         const outNodeType = outNodes[i].Node_type;
+                        const outLineNum = outNodes[i].Line_num;
 
-                        outMermaid += `    id${outNodeID}`
+                        convMermaidSrc += `    id${outNodeID}`
 
                         if (outNodeType === "basic") {
-                            outMermaid += `[\"\`${outSafeCode}\`\"]`;
+                            convMermaidSrc += `[\"\`${outSafeCode}\`\"]`;
                         }
                         else if (outNodeType === "cond") {
-                            outMermaid += `{\"\`${outSafeCode}\`\"}`;
+                            convMermaidSrc += `{\"\`${outSafeCode}\`\"}`;
                         }
 
-                        outMermaid += `\n`;
+                        convMermaidSrc += `\n`;
+
+                        convNodes.push(new Node_t(outNodeID, outSafeCode, outNodeType, outLineNum));
                     }
                 }
 
@@ -254,27 +314,35 @@ function App() {
                         return ai - bi;
                     });
 
-                    // Convert outEdges to mermaidJS
+                    // Convert outEdges to edge object
                     for (let i = 0; i < outEdges.length; i++) {
-                        const outEdgeCond = outEdges[i].Label;
+                        const outEdgeID = outEdges[i].Id;
                         const outEdgeFrom = outEdges[i].From_node_loc;
                         const outEdgeDest = outEdges[i].To_node_loc;
+                        const outEdgeCond = outEdges[i].Label;
 
-                        outMermaid += `    id${outEdgeFrom} `;
-                        outMermaid += outEdgeCond !== "" ? `-- ${outEdgeCond} --> ` : `--> `;
-                        outMermaid += `id${outEdgeDest}\n`;
+                        convMermaidSrc += `    id${outEdgeFrom} `;
+                        convMermaidSrc += outEdgeCond !== "" ? `-- ${outEdgeCond} --> ` : `--> `;
+                        convMermaidSrc += `id${outEdgeDest}\n`;
+
+                        convEdges.push(new Edge_t(outEdgeID, outEdgeFrom, outEdgeDest, outEdgeCond));
                     }
                 }
 
-                outMermaids.push(outMermaid);
-                outMermaid = "";
+                convMermaidSrcs.push(convMermaidSrc);
+                convMermaidSrc = "";
+
+                convFuncs.push(new Func_t(outFuncsName, convNodes, convEdges));
             }
 
-            // Set mermaids to globally
-            setMermaids(outMermaids);
+            // Set mermaid objects to globally
+            mermaidRef.current = new Mermaid_t(convFuncs);
+
+            // Set mermaid source code to globally
+            setMermaidSrcs(convMermaidSrcs);
 
             // Set default tab
-            setActiveTab(outMermaids.length ? 0 : -1);
+            setActiveTab(convMermaidSrcs.length ? 0 : -1);
 
         } catch (_err) {
             console.error(`Flowchart generation error!\n`);
@@ -282,11 +350,11 @@ function App() {
         }
     };
 
-    // Run inspector again and print debug
-    const handlePrintDebug = async () => {
+    // Run inspector again and print debugs
+    const handlePrintDebugs = async (): Promise<Debug_t[]> => {
         if (!fileRef.current) {
             alert("No file selected!");
-            return;
+            return [];
         }
 
         try {
@@ -298,13 +366,10 @@ function App() {
                 await res.text();
                 console.error(`Debug output generation failed!\n`);
                 alert(`Debug output generation failed!\n`);
-                return;
+                return [];
             }
 
             const data = await res.json();
-            console.log(`Debug output generation success!\n`);
-            alert(`Debug output generation success!\n`);
-
             const output = data.output;
 
             let outDebugs: Array<Debug_t> = [];
@@ -317,12 +382,10 @@ function App() {
                     const outNodeID: number = output.Debugs[i].Node_id;
                     const outNodeState: string = output.Debugs[i].Node_state;
                     const outMessage: string = output.Debugs[i].Msg;
+                    const outLineNum: number = output.Debugs[i].Line_number;
 
-                    outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage));
+                    outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage, outLineNum));
                 }
-
-                // Set debug objects to globally
-                setDebugs(outDebugs);
 
                 // Get HTML div element
                 const logBox = document.getElementById("logBox");
@@ -334,9 +397,6 @@ function App() {
                     // Create HTML table
                     const table = document.createElement("table");
                     table.className = "debug-table";
-
-                    // Initialize reference to table
-                    debugRef.current = table as HTMLTableElement;
 
                     // Create thead
                     const thead = table.createTHead();
@@ -356,10 +416,12 @@ function App() {
                             const row = tbody.insertRow();
                             const cType = row.insertCell();
                             const cFuncName = row.insertCell();
+                            const cLineNum = row.insertCell();
                             const cMessage = row.insertCell();
 
                             cType.textContent = outDebugs[i].type;
                             cFuncName.textContent = outDebugs[i].funcName;
+                            cLineNum.textContent = outDebugs[i].lineNum.toString();
                             cMessage.textContent = outDebugs[i].message;
                         }
                     }
@@ -369,9 +431,141 @@ function App() {
                 }
             }
 
+            return outDebugs;
+
         } catch (_err) {
             console.error(`Debug output generation error!\n`);
             alert(`Debug output generation error!\n`);
+            return [];
+        }
+    };
+
+    // Configure Debug Changes
+    const configureDebugChanges = async (debugData: Debug_t[]) => {
+        // Extract "update_node" debug objects
+        const updateNodes = debugData.filter(d => d.type === "update_node");
+        setUpdateNodeSteps(updateNodes);
+
+        // Generate lots of "update_node" mermaidJS source codes
+        if (updateNodes.length > 0) {
+            if (!mermaidRef.current) {
+                return;
+            }
+
+            const srcsWithState: string[] = [];
+
+            for (let i = 0; i < updateNodes.length; i++) {
+                const currentFunc = mermaidRef.current.functions.find(
+                    f => f.name === updateNodes[i].funcName
+                );
+
+                if (!currentFunc)
+                    continue;
+
+                const targetNodeID = updateNodes[i].nodeID;
+                const targetNodeState = updateNodes[i].nodeState;
+
+                let convMermaidSrc = "flowchart TB\n";
+
+                for (const outNode of currentFunc.nodes) {
+                    const outNodeID = outNode.id;
+                    const outNodeCode = outNode.code;
+                    const outNodeType = outNode.type;
+
+                    convMermaidSrc += `    id${outNodeID}`
+
+                    if (outNodeID === targetNodeID) {
+                        if (targetNodeState !== "{}") {
+                            outNode.state = targetNodeState;
+                        }
+                    }
+
+                    if (outNodeType === "basic") {
+                        convMermaidSrc += `[\"\`${outNodeCode} ${outNode.state} \`\"]`;
+                    }
+                    else if (outNodeType === "cond") {
+                        convMermaidSrc += `{\"\`${outNodeCode} ${outNode.state} \`\"}`;
+                    }
+
+                    convMermaidSrc += `\n`;
+                }
+
+                for (const outEdge of currentFunc.edges) {
+                    const outEdgeFrom = outEdge.from;
+                    const outEdgeDest = outEdge.dest;
+                    const outEdgeCond = outEdge.cond;
+
+                    convMermaidSrc += `    id${outEdgeFrom} `;
+                    convMermaidSrc += outEdgeCond !== "" ? `-- ${outEdgeCond} --> ` : `--> `;
+                    convMermaidSrc += `id${outEdgeDest}\n`;
+                }
+
+                srcsWithState.push(convMermaidSrc);
+            }
+
+            setMermaidSrcsWithState(srcsWithState);
+
+            setCurrentStepIndex(0);
+
+            const firstStep = updateNodes[0];
+
+            if (firstStep) {
+                const firstTabIndex = tabNames.current.findIndex((name) => name === firstStep.funcName);
+
+                if (firstTabIndex !== -1) {
+                    setActiveTab(firstTabIndex);
+                }
+            }
+        }
+    };
+
+    const handleSliderChange = (newIndex: number) => {
+        setCurrentStepIndex(newIndex);
+
+        const step = updateNodeSteps[newIndex];
+
+        if (step) {
+            const tabIndex = tabNames.current.findIndex((name) => name === step.funcName);
+
+            if (tabIndex !== -1) {
+                setActiveTab(tabIndex);
+            }
+        }
+    };
+
+    // Render flowchart for the active tab
+    const renderMermaid = async (index: number, isStepView: boolean = false) => {
+        if (!mermaidSrcRef.current) return;
+
+        if (isStepView && (index < 0 || index >= mermaidSrcsWithState.length)) return;
+        if (!isStepView && (index < 0 || index >= mermaidSrcs.length)) return;
+
+        const mermaidId = `mermaid-${isStepView ? "step" : "tab"}-${index}`;
+
+        const srcToRender = isStepView ? mermaidSrcsWithState[index] : mermaidSrcs[index];
+
+        try {
+            const { svg } = await mermaid.render(mermaidId, srcToRender);
+
+            mermaidSrcRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid">${svg}</div>`;
+
+            requestAnimationFrame(() => {
+                const nodeGroups = mermaidSrcRef.current?.querySelectorAll("g[class*='node']");
+
+                if (!nodeGroups) return;
+
+                nodeGroups.forEach((nodeGroup: Element) => {
+                    const gElement = nodeGroup as SVGGElement;
+                    const nodeId = gElement.id?.replace(/^id/, "");
+
+                    if (nodeId && !isNaN(Number(nodeId))) {
+                        gElement.setAttribute("data-id", nodeId);
+                        gElement.style.cursor = "pointer";
+                    }
+                });
+            });
+        } catch (err) {
+            console.error(`Mermaid render error\n${err}`);
         }
     };
 
@@ -384,13 +578,16 @@ function App() {
 
         try {
             // Upload file to server
-            handleFileUpload();
+            await handleFileUpload();
 
             // Run inspector and print mermaids
-            handlePrintMermaids();
+            await handlePrintMermaids();
 
-            // Run inspector and print debug
-            handlePrintDebug();
+            // Run inspector and print debugs
+            const debugData = await handlePrintDebugs();
+
+            // Configure Debug Changes
+            await configureDebugChanges(debugData);
             
         } catch (_err) {
             console.error(`Inspection error!\n`);
@@ -414,22 +611,57 @@ function App() {
             <main>
                 <div ref={codeEditorRef} className="mainBoxes" id="codeBox"></div>
                 <div className="mainBoxes" id="mermaidBox">
-                    {mermaids.length > 1 && (
+                    {mermaidSrcs.length > 1 && (
                         <div className="mermaid-tabs">
-                            {mermaids.map((_callback, index) => (
-                                <button key={index} className={index === activeTab ? "tab active" : "tab"} onClick={() => setActiveTab(index)}>
+                            {mermaidSrcs.map((_callback, index) => (
+                                <button
+                                    key={index}
+                                    className={index === activeTab ? "tab active" : "tab"}
+                                    onClick={() => {
+                                        setActiveTab(index);
+
+                                        const firstStepIndex = updateNodeSteps.findIndex(
+                                            (step) => step.funcName === tabNames.current[index]
+                                        );
+
+                                        if (firstStepIndex !== -1) {
+                                            setCurrentStepIndex(firstStepIndex);
+                                        }
+                                    }}
+                                >
                                     {`${tabNames.current[index]}`}
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    <div ref={mermaidRef} className="mermaid-container" />
+                    <div ref={mermaidSrcRef} className="mermaid-container" />
                 </div>
                 <div className="mainBoxes" id="logBox"></div>
             </main>
             <footer>
-                <div id="placeholder"></div>
+                {updateNodeSteps.length > 0 && (
+                    <div className="step-control">
+                        <div className="step-attr">
+                            {currentStepIndex + 1} / {updateNodeSteps.length} | 
+                            Functions: {updateNodeSteps[currentStepIndex]?.funcName} |
+                            Node ID: {updateNodeSteps[currentStepIndex]?.nodeID} |
+                            Node State: {updateNodeSteps[currentStepIndex]?.nodeState}
+                        </div>
+                        <br /><br /><br /><br />
+                        <input
+                            type="range"
+                            min="0"
+                            max={updateNodeSteps.length - 1}
+                            value={currentStepIndex}
+                            onChange={(e) => {
+                                const newIndex = Number(e.target.value);
+                                handleSliderChange(newIndex);
+                            }}
+                            className="step-slider"
+                        />
+                    </div>
+                )}
             </footer>
         </>
     )
