@@ -100,6 +100,36 @@ function App() {
     const [_fileContent, setFileContent] = useState<string>("");
     const [_fileName, setFileName] = useState<string>("");
 
+    const [leftWidth, setLeftWidth] = useState(33.3);
+    const [middleWidth, setMiddleWidth] = useState(33.3);
+    const [rightWidth, setRightWidth] = useState(33.3);
+
+    const [isDragging, setIsDragging] = useState<null | "left" | "right">(null);
+
+    // Create code editor view
+    useEffect(() => {
+        if (!codeEditorRef.current) return;
+
+        const view = new EditorView({
+            doc: "",
+            parent: codeEditorRef.current,
+            extensions: [
+                basicSetup,
+                EditorState.readOnly.of(true),
+                EditorView.editable.of(false),
+                EditorView.contentAttributes.of({ tabindex: "0" }),
+                go(),
+                nord
+            ]
+        });
+
+        codeViewRef.current = view;
+
+        return () => {
+            view.destroy();
+        };
+    }, []);
+
     // Initialize mermaid functionality
     useEffect(() => {
         mermaid.initialize({
@@ -175,29 +205,50 @@ function App() {
         };
     }, [updateNodeSteps]);
 
-    // Create code editor view
+    // Add functionality for resize container boxes using mouse
     useEffect(() => {
-        if (!codeEditorRef.current) return;
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging)
+                return;
 
-        const view = new EditorView({
-            doc: "",
-            parent: codeEditorRef.current,
-            extensions: [
-                basicSetup,
-                EditorState.readOnly.of(true),
-                EditorView.editable.of(false),
-                EditorView.contentAttributes.of({ tabindex: "0" }),
-                go(),
-                nord
-            ]
-        });
+            const totalWidth = window.innerWidth;
+            const mousePercent = (e.clientX / totalWidth) * 100;
 
-        codeViewRef.current = view;
+            // Left divider
+            if (isDragging === "left") {
+                const newLeftWidth = Math.min(Math.max(mousePercent, 15), 70);
+                const remaining = 100 - newLeftWidth - rightWidth;
+
+                if (remaining >= 15) {
+                    setLeftWidth(newLeftWidth);
+                    setMiddleWidth(remaining);
+                }
+            }
+
+            // Right divider
+            else if (isDragging === "right") {
+                const newRightWidth = Math.min(Math.max(100 - mousePercent, 15), 70);
+                const remaining = 100 - leftWidth - newRightWidth;
+
+                if (remaining >= 15) {
+                    setRightWidth(newRightWidth);
+                    setMiddleWidth(remaining);
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(null);
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
 
         return () => {
-            view.destroy();
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
         };
-    }, []);
+    }, [isDragging, leftWidth, rightWidth]);
 
     // Trigger hidden file input
     const handleFileClick = () => {
@@ -645,9 +696,10 @@ function App() {
                 </div>
                 <br /><br /><br /><br /><hr /><br />
             </header>
-            <main>
-                <div ref={codeEditorRef} className="mainBoxes" id="codeBox"></div>
-                <div className="mainBoxes" id="mermaidBox">
+            <main className="main-layout">
+                <div ref={codeEditorRef} className="mainBoxes" id="codeBox" style={{ width: `${leftWidth}%` }} />
+                <div className="resize-bar" onMouseDown={() => setIsDragging("left")} />
+                <div className="mainBoxes" id="mermaidBox" style={{ width: `${middleWidth}%` }}>
                     {mermaidSrcs.length > 1 && (
                         <div className="mermaid-tabs">
                             {mermaidSrcs.map((_callback, index) => (
@@ -671,10 +723,10 @@ function App() {
                             ))}
                         </div>
                     )}
-
                     <div ref={mermaidSrcRef} className="mermaid-container" />
                 </div>
-                <div className="mainBoxes" id="logBox"></div>
+                <div className="resize-bar" onMouseDown={() => setIsDragging("right")} />
+                <div className="mainBoxes" id="logBox" style={{ width: `${rightWidth}%` }} />
             </main>
             <footer>
                 {updateNodeSteps.length > 0 && (
