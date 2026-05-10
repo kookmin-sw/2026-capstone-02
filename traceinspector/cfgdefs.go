@@ -25,6 +25,7 @@ const (
 type CFGNodeLocation struct {
 	Function_name imp.ImpFunctionName
 	Id            NodeID
+	Line_num      int
 }
 
 func (loc CFGNodeLocation) String() string {
@@ -45,7 +46,7 @@ func create_empty_node_location() CFGNodeLocation {
 
 type CFGNode struct {
 	Ast       imp.Stmt `json:"-"`
-	Id        CFGNodeLocation
+	Loc       CFGNodeLocation
 	Code      string
 	Node_type node_types
 	Line_num  int
@@ -53,7 +54,7 @@ type CFGNode struct {
 
 type CFGCondNode struct {
 	Cond_expr    imp.Expr `json:"-"`
-	Id           CFGNodeLocation
+	Loc          CFGNodeLocation
 	Code         string
 	Node_type    node_types
 	Line_num     int
@@ -65,9 +66,9 @@ func (node *CFGNode) is_CFGNodeClass() {}
 func (node *CFGNode) To_mermaid() string {
 	switch node.Node_type {
 	case node_basic:
-		return fmt.Sprintf("%d[\"`%s`\"]", node.Id.Id, escape_string_mermaid(node.Code))
+		return fmt.Sprintf("%d[\"`%s`\"]", node.Loc.Id, escape_string_mermaid(node.Code))
 	case node_cond:
-		return fmt.Sprintf("%d{\"`%s`\"}", node.Id.Id, escape_string_mermaid(node.Code))
+		return fmt.Sprintf("%d{\"`%s`\"}", node.Loc.Id, escape_string_mermaid(node.Code))
 	}
 	return ""
 }
@@ -77,9 +78,9 @@ func (node *CFGCondNode) is_CFGNodeClass() {}
 func (node *CFGCondNode) To_mermaid() string {
 	switch node.Node_type {
 	case node_basic:
-		return fmt.Sprintf("%d[\"`%s`\"]", node.Id.Id, escape_string_mermaid(node.Code))
+		return fmt.Sprintf("%d[\"`%s`\"]", node.Loc.Id, escape_string_mermaid(node.Code))
 	case node_cond:
-		return fmt.Sprintf("%d{\"`%s`\"}", node.Id.Id, escape_string_mermaid(node.Code))
+		return fmt.Sprintf("%d{\"`%s`\"}", node.Loc.Id, escape_string_mermaid(node.Code))
 	}
 	return ""
 }
@@ -98,25 +99,25 @@ func (loc CFGEdgeLocation) MarshalJSON() ([]byte, error) {
 }
 
 type CFGCondEdge struct {
-	Id                CFGEdgeLocation
+	Loc               CFGEdgeLocation
 	From_node_loc     CFGNodeLocation
 	To_true_node_loc  CFGNodeLocation
 	To_false_node_loc CFGNodeLocation
 }
 
 func (edge CFGCondEdge) String() string {
-	return fmt.Sprintf("(%s){true : %s -> %s, false : %s -> %s}", edge.Id, edge.From_node_loc, edge.To_true_node_loc, edge.From_node_loc, edge.To_false_node_loc)
+	return fmt.Sprintf("(%s){true : %s -> %s, false : %s -> %s}", edge.Loc, edge.From_node_loc, edge.To_true_node_loc, edge.From_node_loc, edge.To_false_node_loc)
 }
 
 type CFGEdge struct {
-	Id            CFGEdgeLocation
+	Loc           CFGEdgeLocation
 	From_node_loc CFGNodeLocation
 	To_node_loc   CFGNodeLocation
 	Label         string
 }
 
 func (edge CFGEdge) String() string {
-	return fmt.Sprintf("(%s){%s -> %s}", edge.Id, edge.From_node_loc, edge.To_node_loc)
+	return fmt.Sprintf("(%s){%s -> %s}", edge.Loc, edge.From_node_loc, edge.To_node_loc)
 }
 
 type CFGEdgeClass interface {
@@ -157,10 +158,10 @@ func (m CFGGraph) MarshalJSON() ([]byte, error) {
 			repr.Edges = append(repr.Edges, *edge)
 		case *CFGCondEdge:
 			if edge.To_true_node_loc.Id > 0 {
-				repr.Edges = append(repr.Edges, CFGEdge{Id: edge.Id, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_true_node_loc, Label: "True"})
+				repr.Edges = append(repr.Edges, CFGEdge{Loc: edge.Loc, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_true_node_loc, Label: "True"})
 			}
 			if edge.To_false_node_loc.Id > 0 {
-				repr.Edges = append(repr.Edges, CFGEdge{Id: edge.Id, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_false_node_loc, Label: "False"})
+				repr.Edges = append(repr.Edges, CFGEdge{Loc: edge.Loc, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_false_node_loc, Label: "False"})
 			}
 		}
 	}
@@ -184,10 +185,10 @@ func (m CFGGraph) To_mermaid() string {
 			repr.Edges = append(repr.Edges, *edge)
 		case *CFGCondEdge:
 			if edge.To_true_node_loc.Id > 0 {
-				repr.Edges = append(repr.Edges, CFGEdge{Id: edge.Id, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_true_node_loc, Label: "True"})
+				repr.Edges = append(repr.Edges, CFGEdge{Loc: edge.Loc, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_true_node_loc, Label: "True"})
 			}
 			if edge.To_false_node_loc.Id > 0 {
-				repr.Edges = append(repr.Edges, CFGEdge{Id: edge.Id, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_false_node_loc, Label: "False"})
+				repr.Edges = append(repr.Edges, CFGEdge{Loc: edge.Loc, From_node_loc: edge.From_node_loc, To_node_loc: edge.To_false_node_loc, Label: "False"})
 			}
 		}
 	}
