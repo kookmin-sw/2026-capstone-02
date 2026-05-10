@@ -128,6 +128,7 @@ function App() {
         }
     }, [activeTab, mermaidSrcs, updateNodeSteps]);
 
+    // Call function to render flowchart by another condition
     useEffect(() => {
         if (
             updateNodeSteps.length > 0 &&
@@ -137,6 +138,42 @@ function App() {
             renderMermaid(currentStepIndex, true);
         }
     }, [currentStepIndex, mermaidSrcsWithState]);
+
+    // Control slider with arrow keys
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (updateNodeSteps.length === 0)
+                return;
+
+            // Right Arrow -> Next Step
+            if (event.key === "ArrowRight") {
+                setCurrentStepIndex((prev) => {
+                    const next = Math.min(prev + 1, updateNodeSteps.length - 1);
+
+                    handleSliderChange(next);
+
+                    return next;
+                });
+            }
+
+            // Left Arrow -> Previous Step
+            else if (event.key === "ArrowLeft") {
+                setCurrentStepIndex((prev) => {
+                    const next = Math.max(prev - 1, 0);
+
+                    handleSliderChange(next);
+
+                    return next;
+                });
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [updateNodeSteps]);
 
     // Create code editor view
     useEffect(() => {
