@@ -82,7 +82,6 @@ class Debug_t {
 };
 
 function App() {
-
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
 
@@ -178,26 +177,23 @@ function App() {
             if (updateNodeSteps.length === 0)
                 return;
 
-            // Right Arrow -> Next Step
-            if (event.key === "ArrowRight") {
-                setCurrentStepIndex((prev) => {
-                    const next = Math.min(prev + 1, updateNodeSteps.length - 1);
-
-                    handleSliderChange(next);
-
-                    return next;
-                });
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                return;
             }
 
-            // Left Arrow -> Previous Step
+            event.preventDefault();
+
+            let nextIndex = currentStepIndex;
+
+            if (event.key === "ArrowRight") {
+                nextIndex = Math.min(currentStepIndex + 1, updateNodeSteps.length - 1);
+            }
             else if (event.key === "ArrowLeft") {
-                setCurrentStepIndex((prev) => {
-                    const next = Math.max(prev - 1, 0);
+                nextIndex = Math.max(currentStepIndex - 1, 0);
+            }
 
-                    handleSliderChange(next);
-
-                    return next;
-                });
+            if (nextIndex !== currentStepIndex) {
+                handleSliderChange(nextIndex);
             }
         };
 
@@ -206,7 +202,7 @@ function App() {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [updateNodeSteps]);
+    }, [currentStepIndex, updateNodeSteps]);
 
     // Add functionality for resize container boxes using mouse
     useEffect(() => {
@@ -572,10 +568,10 @@ function App() {
                     }
 
                     if (outNodeType === "basic") {
-                        convMermaidSrc += `[\"\`${outNodeCode} ${outNode.state} \`\"]`;
+                        convMermaidSrc += `[\"\`<span style='color:#ebcb8b'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"]`;
                     }
                     else if (outNodeType === "cond") {
-                        convMermaidSrc += `{\"\`${outNodeCode} ${outNode.state} \`\"}`;
+                        convMermaidSrc += `{\"\`<span style='color:#ebcb8b'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"}`;
                     }
 
                     convMermaidSrc += `\n`;
