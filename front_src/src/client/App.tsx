@@ -11,6 +11,7 @@ import { go } from "@codemirror/lang-go";
 import { nord } from "@fsegurai/codemirror-theme-nord";
 
 import mermaid from "mermaid";
+import panzoom from "panzoom";
 
 class Node_t {
     id: number;
@@ -105,6 +106,8 @@ function App() {
     const [rightWidth, setRightWidth] = useState(33.3);
 
     const [isDragging, setIsDragging] = useState<null | "left" | "right">(null);
+
+    const panzoomInstanceRef = useRef<any>(null);
 
     // Create code editor view
     useEffect(() => {
@@ -635,7 +638,30 @@ function App() {
         try {
             const { svg } = await mermaid.render(mermaidId, srcToRender);
 
-            mermaidSrcRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid">${svg}</div>`;
+            mermaidSrcRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid-wrapper">${svg}</div>`;
+
+            if (panzoomInstanceRef.current) {
+                panzoomInstanceRef.current.dispose();
+            }
+
+            const svgElement = mermaidSrcRef.current.querySelector("svg");
+
+            if (svgElement) {
+                panzoomInstanceRef.current = panzoom(svgElement, {
+                    maxZoom: 5,
+                    minZoom: 0.5,
+
+                    smoothScroll: false,
+
+                    zoomSpeed: 0.08,
+                    zoomDoubleClickSpeed: 1,
+
+                    beforeMouseDown: () => false,
+                    beforeWheel: () => false,
+
+                    filterKey: () => true
+                });
+            }
 
             requestAnimationFrame(() => {
                 const nodeGroups = mermaidSrcRef.current?.querySelectorAll("g[class*='node']");
@@ -652,6 +678,7 @@ function App() {
                     }
                 });
             });
+
         } catch (err) {
             console.error(`Mermaid render error\n${err}`);
         }
