@@ -45,16 +45,16 @@ func create_empty_node_location() CFGNodeLocation {
 }
 
 type CFGNode struct {
-	Ast       imp.Stmt `json:"-"`
-	Loc       CFGNodeLocation
+	Ast       imp.Stmt        `json:"-"`
+	Loc       CFGNodeLocation `json:"Id"`
 	Code      string
 	Node_type node_types
 	Line_num  int
 }
 
 type CFGCondNode struct {
-	Cond_expr    imp.Expr `json:"-"`
-	Loc          CFGNodeLocation
+	Cond_expr    imp.Expr        `json:"-"`
+	Loc          CFGNodeLocation `json:"Id"`
 	Code         string
 	Node_type    node_types
 	Line_num     int
@@ -99,10 +99,10 @@ func (loc CFGEdgeLocation) MarshalJSON() ([]byte, error) {
 }
 
 type CFGCondEdge struct {
-	Loc               CFGEdgeLocation
-	From_node_loc     CFGNodeLocation
-	To_true_node_loc  CFGNodeLocation
-	To_false_node_loc CFGNodeLocation
+	Loc               CFGEdgeLocation `json:"Id"`
+	From_node_loc     CFGNodeLocation `json:"From_node_id"`
+	To_true_node_loc  CFGNodeLocation `json:"To_true_node_id"`
+	To_false_node_loc CFGNodeLocation `json:"To_false_node_id"`
 }
 
 func (edge CFGCondEdge) String() string {
@@ -110,9 +110,9 @@ func (edge CFGCondEdge) String() string {
 }
 
 type CFGEdge struct {
-	Loc           CFGEdgeLocation
-	From_node_loc CFGNodeLocation
-	To_node_loc   CFGNodeLocation
+	Loc           CFGEdgeLocation `json:"Id"`
+	From_node_loc CFGNodeLocation `json:"From_node_id"`
+	To_node_loc   CFGNodeLocation `json:"To_node_id"`
 	Label         string
 }
 
