@@ -317,8 +317,8 @@ function App() {
                     // Convert outEdges to edge object
                     for (let i = 0; i < outEdges.length; i++) {
                         const outEdgeID = outEdges[i].Id;
-                        const outEdgeFrom = outEdges[i].From_node_loc;
-                        const outEdgeDest = outEdges[i].To_node_loc;
+                        const outEdgeFrom = outEdges[i].From_node_id;
+                        const outEdgeDest = outEdges[i].To_node_id;
                         const outEdgeCond = outEdges[i].Label;
 
                         convMermaidSrc += `    id${outEdgeFrom} `;
@@ -401,7 +401,7 @@ function App() {
                     // Create thead
                     const thead = table.createTHead();
                     const headerRow = thead.insertRow();
-                    ["Type", "Function", "Message"].forEach((h) => {
+                    ["Type", "Function", "Line", "Message"].forEach((h) => {
                         const th = document.createElement("th");
                         th.textContent = h;
                         headerRow.appendChild(th);
@@ -645,7 +645,7 @@ function App() {
                         <div className="step-attr">
                             {currentStepIndex + 1} / {updateNodeSteps.length} | 
                             Functions: {updateNodeSteps[currentStepIndex]?.funcName} |
-                            Node ID: {updateNodeSteps[currentStepIndex]?.nodeID} |
+                            Line: {updateNodeSteps[currentStepIndex]?.lineNum} |
                             Node State: {updateNodeSteps[currentStepIndex]?.nodeState}
                         </div>
                         <br /><br /><br /><br />
