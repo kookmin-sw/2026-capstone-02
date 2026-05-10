@@ -43,9 +43,36 @@
     position: relative;
 }
 
-.mermaid svg {
+.mermaid-wrapper {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.mermaid-wrapper:active {
+    cursor: grabbing;
+}
+
+.mermaid-wrapper svg {
     width: 100%;
     height: 66vh;
+    pointer-events: all;
+    user-select: none;
+}
+
+.mermaid-container::-webkit-scrollbar,
+.mermaid-wrapper::-webkit-scrollbar,
+#mermaidBox::-webkit-scrollbar,
+#codeBox::-webkit-scrollbar {
+    display: none;
+}
+
+.mermaid-container,
+.mermaid-wrapper,
+#mermaidBox,
+#codeBox {
+    overflow: hidden;
+    scrollbar-width: none;
 }
 
 #logBox {
