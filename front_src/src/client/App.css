@@ -8,8 +8,8 @@
     font-family: CascadiaMono;
     font-weight: bold;
     box-sizing: border-box;
-    background-color: #2E3440;
-    color: #8FBCBB;
+    background-color: #2e3440;
+    color: #8fbcbb;
 }
 
 body {
@@ -17,5 +17,5 @@ body {
 }
 
 hr {
-    border: 2px solid #8FBCBB;
+    border: 2px solid #8fbcbb;
 }

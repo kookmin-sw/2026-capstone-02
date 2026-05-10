@@ -1,7 +1,7 @@
 
 .mainBoxes {
     font-size: 12px;
-    border: 2px solid #8FBCBB;
+    border: 2px solid #8fbcbb;
     padding: 25px;
     height: 80vh;
     width: 33.3%;
@@ -38,6 +38,7 @@
     background: #2e3440;
     border-radius: 4px;
     overflow-x: auto;
+    position: relative;
 }
 
 .mermaid svg {
@@ -60,4 +61,71 @@
     padding: 6px 8px;
     border: 1px solid #cbd5e1;
     text-align: left;
+}
+
+.step-control {
+    padding: 10px 15px;
+    background-color: #2e3440;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    gap: 10px;
+}
+
+.step-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #4c566a;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+}
+
+.step-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #88c0d0;
+    border: 2px solid #eceff4;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.step-slider::-webkit-slider-thumb:hover {
+    background: #8fbcbb;
+    transform: scale(1.1);
+}
+
+.step-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #8fbcbb;
+    border: 2px solid #eceff4;
+    cursor: pointer;
+}
+
+.step-slider::-moz-range-track {
+    background: #4c566a;
+    height: 8px;
+    border-radius: 999px;
+}
+
+.step-slider::-moz-range-progress {
+    background: #4c566a;
+    height: 8px;
+    border-radius: 999px;
+}
+
+.step-attr {
+    width: 25%;
+}
+
+g[class*='node'] {
+    filter: drop-shadow(0 0 8px #cbd5e12f);
 }
