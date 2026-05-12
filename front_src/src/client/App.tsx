@@ -827,9 +827,9 @@ function App() {
                     <div id="headTitle">TraceInspector</div>
                 </div>
                 <div className="headBoxes" id="headButtonBox">
-                    <button onClick={handleFileClick} className="headButtons" id="openButton">Open</button>
+                    <button onClick={handleFileClick} className="headButtons" id="openButton">&#xf07c; Open</button>
                     <input id="fileInput" type="file" accept=".go" onChange={handleFileChange} style={{ display: "none" }} />
-                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>Run</button>
+                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>&#xeb9e; Run</button>
                 </div>
                 <br /><br /><br /><br /><hr /><br />
             </header>
