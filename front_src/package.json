@@ -19,7 +19,6 @@
     "@codemirror/search": "^6.6.0",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
-    "@fsegurai/codemirror-theme-nord": "^6.2.5",
     "@types/multer": "^2.1.0",
     "codemirror": "^6.0.2",
     "codemirror-lang-mermaid": "^0.5.0",
@@ -31,6 +30,7 @@
     "panzoom": "^9.4.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "thememirror": "^2.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vite-express": "*"

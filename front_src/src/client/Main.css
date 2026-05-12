@@ -1,7 +1,7 @@
 
 .mainBoxes {
     font-size: 12px;
-    border: 2px solid #8fbcbb;
+    border: 2px solid #6272a4;
     padding: 25px;
     height: 80vh;
     width: 33.3%;
@@ -11,7 +11,46 @@
 }
 
 .cm-editor {
+    font-size: 14px;
     height: 74vh;
+}
+
+.cm-highlight-line {
+    position: relative;
+}
+
+.cm-highlight-line::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: #f1fa8c3f;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cm-line {
+    background: transparent !important;
+}
+
+.debug-warning td {
+    color: #f1fa8c;
+}
+
+.icon-warning {
+    font-size: 36px;
+    color: #f1fa8c;
+}
+
+.debug-error td {
+    color: #ff5555;
+}
+
+.icon-error {
+    font-size: 36px;
+    color: #f1fa8c;
 }
 
 .mermaid-tabs {
@@ -21,8 +60,8 @@
 }
 
 .mermaid-tabs .tab {
-    background: #2b2f3a;
-    color: #cbd5e1;
+    background: #44475a;
+    color: #f8f8f2;
     border: none;
     padding: 6px 10px;
     cursor: pointer;
@@ -30,14 +69,14 @@
 }
 
 .mermaid-tabs .tab.active {
-    background: #4c566a;
+    background: #6272a4;
 }
 
 .mermaid-container {
     width: 100%;
     margin: 0 auto;
     padding: 1rem;
-    background: #2e3440;
+    background: #282a36;
     border-radius: 4px;
     overflow-x: auto;
     position: relative;
@@ -88,13 +127,13 @@
 .debug-table td,
 .debug-table tr {
     padding: 6px 8px;
-    border: 1px solid #cbd5e1;
-    text-align: left;
+    border: 1px solid #6272a4;
+    text-align: center;
 }
 
 .step-control {
     padding: 10px 15px;
-    background-color: #2e3440;
+    background-color: #282a36;
     display: flex;
     align-items: center;
     font-size: 12px;
@@ -107,7 +146,7 @@
     appearance: none;
     width: 100%;
     height: 8px;
-    background: #4c566a;
+    background: #44475a;
     border-radius: 999px;
     outline: none;
     cursor: pointer;
@@ -119,14 +158,14 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #88c0d0;
-    border: 2px solid #eceff4;
+    background: #bd93f9;
+    border: 2px solid #f8f8f2;
     cursor: pointer;
     transition: 0.2s ease;
 }
 
 .step-slider::-webkit-slider-thumb:hover {
-    background: #8fbcbb;
+    background: #44475a;
     transform: scale(1.1);
 }
 
@@ -134,19 +173,19 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #8fbcbb;
-    border: 2px solid #eceff4;
+    background: #44475a;
+    border: 2px solid #f8f8f2;
     cursor: pointer;
 }
 
 .step-slider::-moz-range-track {
-    background: #4c566a;
+    background: #44475a;
     height: 8px;
     border-radius: 999px;
 }
 
 .step-slider::-moz-range-progress {
-    background: #4c566a;
+    background: #44475a;
     height: 8px;
     border-radius: 999px;
 }
@@ -156,7 +195,7 @@
 }
 
 g[class*='node'] {
-    filter: drop-shadow(0 0 8px #cbd5e12f);
+    filter: drop-shadow(0 0 8px #bd93f94a);
 }
 
 .main-layout {
@@ -168,10 +207,10 @@ g[class*='node'] {
 .resize-bar {
     width: 6px;
     cursor: col-resize;
-    background-color: #2e3440;
+    background-color: #282a36;
     transition: background-color 0.2s;
 }
 
 .resize-bar:hover {
-    background-color: #8fbcbb;
+    background-color: #bd93f9;
 }

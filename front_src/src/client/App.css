@@ -1,15 +1,15 @@
 
 @font-face {
-    src: url(../ttf/CascadiaMono-SemiBold.ttf);
-    font-family: CascadiaMono;
+    src: url(../ttf/CaskaydiaCoveNerdFontMono-SemiBold.ttf);
+    font-family: CaskaydiaCove;
 }
 
 * {
-    font-family: CascadiaMono;
+    font-family: CaskaydiaCove;
     font-weight: bold;
     box-sizing: border-box;
-    background-color: #2e3440;
-    color: #8fbcbb;
+    background-color: #282a36;
+    color: #f8f8f2;
 }
 
 body {
@@ -17,5 +17,5 @@ body {
 }
 
 hr {
-    border: 2px solid #8fbcbb;
+    border: 2px solid #6272a4;
 }
