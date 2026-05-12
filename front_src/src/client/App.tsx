@@ -5,10 +5,12 @@ import "./Footer.css";
 import "./App.css";
 
 import { useState, useEffect, useRef } from "react";
+
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { EditorState, StateField, StateEffect } from "@codemirror/state";
+import { Decoration, type DecorationSet } from "@codemirror/view";
 import { go } from "@codemirror/lang-go";
-import { nord } from "@fsegurai/codemirror-theme-nord";
+import { dracula } from 'thememirror';
 
 import mermaid from "mermaid";
 import panzoom from "panzoom";
@@ -81,6 +83,35 @@ class Debug_t {
     }
 };
 
+const highlightLineEffect = StateEffect.define<number>();
+const highlightLineField = StateField.define<DecorationSet>({
+    create() {
+        return Decoration.none;
+    },
+    update(deco, tr) {
+        deco = deco.map(tr.changes);
+
+        for (let e of tr.effects) {
+            if (e.is(highlightLineEffect)) {
+                const line = e.value;
+
+                const decoration = Decoration.line({
+                    attributes: { class: "cm-highlight-line" }
+                });
+
+                const linePos = tr.state.doc.line(line);
+
+                deco = Decoration.set([
+                    decoration.range(linePos.from)
+                ]);
+            }
+        }
+
+        return deco;
+    },
+    provide: f => EditorView.decorations.from(f)
+});
+
 function App() {
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
@@ -106,7 +137,7 @@ function App() {
 
     const [isDragging, setIsDragging] = useState<null | "left" | "right">(null);
 
-    const panzoomInstanceRef = useRef<any>(null);
+    const panzoomInstanceRef = useRef<ReturnType<typeof panzoom>>(null);
 
     // Create code editor view
     useEffect(() => {
@@ -117,11 +148,12 @@ function App() {
             parent: codeEditorRef.current,
             extensions: [
                 basicSetup,
+                highlightLineField,
+                dracula,
                 EditorState.readOnly.of(true),
                 EditorView.editable.of(false),
                 EditorView.contentAttributes.of({ tabindex: "0" }),
                 go(),
-                nord
             ]
         });
 
@@ -135,8 +167,22 @@ function App() {
     // Initialize mermaid functionality
     useEffect(() => {
         mermaid.initialize({
-            startOnLoad: false, securityLevel: 'strict', markdownAutoWrap: false, theme: "base", themeVariables: {
-                primaryColor: '#2e3440', primaryTextColor: '#8fbcbb', primaryBorderColor: '#cbd5e1', lineColor: '#cbd5e1', secondaryColor: '#4c566a', tertiaryColor: '#cbd5e1'
+            startOnLoad: false,
+            securityLevel: 'strict',
+            markdownAutoWrap: false,
+            theme: "base",
+            themeVariables: {
+                primaryColor: '#44475a',
+                primaryTextColor: '#f8f8f2',
+                primaryBorderColor: '#6272a4',
+                lineColor: '#6272a4',
+                secondaryColor: '#282a36',
+                tertiaryColor: '#44475a',
+                background: '#282a36',
+                mainBkg: '#282a36',
+                secondBkg: '#44475a',
+                tertiaryBkg: '#6272a4',
+                edgeLabelBackground: '#282a36'
             }
         });
     }, []);
@@ -204,7 +250,20 @@ function App() {
         };
     }, [currentStepIndex, updateNodeSteps]);
 
-    // Add functionality for resize container boxes using mouse
+    // Highlight line of the code background using timeline control
+    useEffect(() => {
+        if (!codeViewRef.current) return;
+
+        const step = updateNodeSteps[currentStepIndex];
+        if (!step) return;
+
+        codeViewRef.current.dispatch({
+            effects: highlightLineEffect.of(step.lineNum)
+        });
+
+    }, [currentStepIndex, updateNodeSteps]);
+
+    // Control size of container boxes using mouse
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isDragging)
@@ -506,10 +565,20 @@ function App() {
                             const cLineNum = row.insertCell();
                             const cMessage = row.insertCell();
 
-                            cType.textContent = outDebugs[i].type;
+                            const isWarning = outDebugs[i].type === "warning";
+                            const isError = outDebugs[i].type === "error";
+
+                            const iconText = isWarning ? "\uea6c" : isError ? "\uea87" : "\uea74";
+                            const iconSpan = document.createElement("span");
+                            iconSpan.textContent = iconText;
+                            iconSpan.className = `icon-${outDebugs[i].type}`;
+
+                            cType.appendChild(iconSpan);
                             cFuncName.textContent = outDebugs[i].funcName;
                             cLineNum.textContent = outDebugs[i].lineNum.toString();
                             cMessage.textContent = outDebugs[i].message;
+
+                            row.className = `debug-${outDebugs[i].type}`;
                         }
                     }
 
@@ -568,10 +637,10 @@ function App() {
                     }
 
                     if (outNodeType === "basic") {
-                        convMermaidSrc += `[\"\`<span style='color:#ebcb8b'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"]`;
+                        convMermaidSrc += `[\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"]`;
                     }
                     else if (outNodeType === "cond") {
-                        convMermaidSrc += `{\"\`<span style='color:#ebcb8b'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"}`;
+                        convMermaidSrc += `{\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"}`;
                     }
 
                     convMermaidSrc += `\n`;
@@ -652,8 +721,8 @@ function App() {
                     zoomSpeed: 0.08,
                     zoomDoubleClickSpeed: 1,
 
-                    beforeMouseDown: () => false,
-                    beforeWheel: () => false,
+                    beforeMouseDown: (_e: MouseEvent) => false,
+                    beforeWheel: (_e: WheelEvent) => false,
 
                     filterKey: () => true
                 });

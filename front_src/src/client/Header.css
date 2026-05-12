@@ -15,8 +15,14 @@
 
 .headButtons {
     font-size: 36px;
-    border: 2px solid #8FBCBB;
+    border: 2px solid #6272a4;
+    background-color: #44475a;
     display: inline-block;
     padding: 6px 12px;
     cursor: pointer;
+}
+
+.headButtons:hover {
+    border-color: #bd93f9;
+    background-color: #6272a4;
 }
