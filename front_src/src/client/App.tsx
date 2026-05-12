@@ -496,6 +496,47 @@ function App() {
         }
     };
 
+    // Format node state to look clean
+    const formatNodeState = (state: string): string => {
+        if (!state || state === "{}")
+            return state;
+
+        let trimmed = state.trim();
+
+        // Remove only outermost braces
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            trimmed = trimmed.slice(1, -1);
+        }
+
+        let result = "";
+        let depth = 0;
+
+        for (let i = 0; i < trimmed.length; i++) {
+            const ch = trimmed[i];
+
+            // Split only on top-level commas
+            if (ch === "," && depth === 0) {
+                result += "\n";
+                continue;
+            }
+
+            result += ch;
+
+            // Update nesting AFTER processing current char
+            if (ch === "{" || ch === "[" || ch === "(") {
+                depth++;
+            }
+            else if (ch === "}" || ch === "]" || ch === ")") {
+                depth--;
+            }
+        }
+
+        return result
+            .split("\n")
+            .map(line => line.trim())
+            .join("\n");
+    };
+
     // Run inspector again and print debugs
     const handlePrintDebugs = async (): Promise<Debug_t[]> => {
         if (!fileRef.current) {
@@ -526,7 +567,7 @@ function App() {
                     const outType: string = output.Debugs[i].Type;
                     const outFuncName: string = output.Debugs[i].Function_name;
                     const outNodeID: number = output.Debugs[i].Node_id;
-                    const outNodeState: string = output.Debugs[i].Node_state;
+                    const outNodeState: string = formatNodeState(output.Debugs[i].Node_state);
                     const outMessage: string = output.Debugs[i].Msg;
                     const outLineNum: number = output.Debugs[i].Line_number;
 
@@ -636,11 +677,15 @@ function App() {
                         }
                     }
 
+                    const formattedState = outNode.state
+                        ? `<span style='color:#f1fa8c'>${outNode.state.replaceAll("\n", "<br/>")}</span><br/><br/>`
+                        : "";
+
                     if (outNodeType === "basic") {
-                        convMermaidSrc += `[\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"]`;
+                        convMermaidSrc += `[\"\`${formattedState}${outNodeCode}\`\"]`;
                     }
                     else if (outNodeType === "cond") {
-                        convMermaidSrc += `{\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"}`;
+                        convMermaidSrc += `{\"\`${formattedState}${outNodeCode}\`\"}`;
                     }
 
                     convMermaidSrc += `\n`;
@@ -827,7 +872,9 @@ function App() {
                             {currentStepIndex + 1} / {updateNodeSteps.length} | 
                             Functions: {updateNodeSteps[currentStepIndex]?.funcName} |
                             Line: {updateNodeSteps[currentStepIndex]?.lineNum} |
-                            Node State: {updateNodeSteps[currentStepIndex]?.nodeState}
+                            Node State: {(updateNodeSteps[currentStepIndex]?.nodeState !== "{}") ?
+                                <span style={{ color: `#f1fa8c` }}>{updateNodeSteps[currentStepIndex]?.nodeState}</span> :
+                                <span style={{ color: `#f1fa8c` }}>None</span>}
                         </div>
                         <br /><br /><br /><br />
                         <input
