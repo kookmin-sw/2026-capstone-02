@@ -530,9 +530,9 @@ func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Run_post_check
 					if node_eval_info.IsBot() {
 						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Possible dead branch: boolean expression '%s' evaluates to ⊥", cond_node.Code))
 					} else if node_eval_info.IsFalse() {
-						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Possible dead branch: boolean expression '%s' always evaluates to false", cond_node.Code))
+						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Dead branch: boolean expression '%s' always evaluates to false", cond_node.Code))
 					} else if node_eval_info.IsTrue() {
-						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Possible dead branch: boolean expression '%s' always evaluates to true", cond_node.Code))
+						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Dead branch: boolean expression '%s' always evaluates to true", cond_node.Code))
 					}
 				}
 			}
