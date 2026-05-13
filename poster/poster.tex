@@ -71,8 +71,7 @@
     정적 분석(Static Analysis)은 프로그램을 실행하지 않고 코드의 실행 특성을 추론하여 잠재적인 오류를 탐지하는 기술이다.
     IDE, 컴파일러, CI 환경 등 다양한 개발 과정에서 코드 품질과 안정성을 높이기 위해 널리 활용되고 있음.
 
-    기존 분석기들은 최종 경고 결과만 제시할 뿐, 어떤 과정을 통해 해당 결과가 도출되었는지는 충분히 보여주지 않음.
-    이로 인해 사용자는 분석 결과가 왜 발생했는지 이해하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이고 결과를 맹신하게 됨.
+    기존 분석기들은 분석 결과만 제시할 뿐 왜 발생했는지 이해하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이고 결과를 맹신하게 됨.
 \end{bpbox}
 
 \begin{bpbox}[title={TraceInspector 소개}]
@@ -119,7 +118,7 @@
     \begin{bpbox}[title={분석 예시: 무한 루프}, bptitlebg=transparent]
         \noindent
         \begin{minipage}{0.5\textwidth}
-            \begin{lstlisting}[language=Go, numbers=left, mathescape]
+            \begin{lstlisting}[language=Go, numbers=left, mathescape, xleftmargin=0.5cm]
 func main() {
     a := 1       a: [1, 1]
     for a > 0 {  a: [1, 5]
@@ -133,18 +132,18 @@ func main() {
         \begin{minipage}{0.45\textwidth}
             \vspace{-0.7\baselineskip}
             무한히 반복되는 코드의 경우 \inleq{n}번의 몸통 실행 후, 계산된 상태에 대해 widening 기법을 적용하여 분석이 종료할 수 있도록 유도.
-            이후 flitering을 적용하여 widening 결과를 정제하여 정확도 손실을 방지함. 
+            이후 flitering을 통해 widening 결과를 정제하여 정확도 손실을 방지함. 
         \end{minipage}
     \end{bpbox}
     \begin{bpbox}[title={분석 예시: 배열 인덱싱 범위}, bptitlebg=transparent]
-        \begin{lstlisting}[language=Go, numbers=left, mathescape]
+        \begin{lstlisting}[language=Go, numbers=left, mathescape, xleftmargin=0.5cm]
 i := 1                i: [1, 1]
 for i < len(arr) {    i: [1, 10], len(arr): [10, 10]
-    key := arr[i]     i: [1, 9], key: [0, 10]
+    key := arr[i]     i: [1, 9]
     arr[i+1] = arr[i] i: [1, 9], key: [0, 10]
 Print(i)              i: [10, 10], key: [0, 10]
         \end{lstlisting}
-        \hrule\kern15pt
+        \hrule \kern15pt
         배열의 길이와 인덱스 변수에 대한 요약상태를 계산 후, 안전한 인덱싱 범위인지 확인함. 
     \end{bpbox}
 \end{bpcolumns}
@@ -178,7 +177,13 @@ Print(i)              i: [10, 10], key: [0, 10]
         \end{minipage}
 \end{bpbox}
 \begin{bpbox}[bpcolor=grey, bpstyle=wide, title={한계 및 향후 계획}]
-    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+    \begin{itemize}
+        \item 관계형 요약도메인 : \texttt{i < len(arr)} 등과 같이 구체적인 값이 아닌 변수간의 논리적 관계를 나태닐 수 있는 대수적 도메인.
+        \item Divide by zero, unreachable code등 보다 다양한 오류 탐지.
+        \item Pointer inference : 포인터 및 메모리 동작 추상화를 통한 liveness 성질 검증.
+        \item \inleq{\mathsf{C} \rightarrow \mathsf{Imp}, \mathsf{Rust} \rightarrow \mathsf{Imp}} 등 \inleq{\mathsf{Imp}}를 활용한 다양한 언어 지원.
+        \item 보다 다양한 언어 기능 지원 : 확장된 타입 체계, widening 휴리스틱 등
+    \end{itemize}
 \end{bpbox}
 \end{bpcolumns}
 
