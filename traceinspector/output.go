@@ -50,7 +50,7 @@ func (ao *AnalyzerOutputHandler) write_warning(node_location CFGNodeLocation, ms
 func (ao *AnalyzerOutputHandler) write_error(node_location CFGNodeLocation, msg string) {
 	ao.Debugs = append(ao.Debugs, AnalyzerOutput{Type: AnalyzerOutput_error, Function_name: node_location.Function_name, Line_number: node_location.Line_num, Node_id: node_location.Id, Msg: msg})
 	ao.Print()
-	os.Exit(1)
+	os.Exit(0)
 }
 
 func (ao *AnalyzerOutputHandler) write_update_node_state(node_location CFGNodeLocation, state_str string, msg string) {
