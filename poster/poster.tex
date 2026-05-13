@@ -54,7 +54,7 @@
 % Affiliations - can use line breaks with \\
 \affiliations{국민대학교 소프트웨어학부}
 % Institution logo (optional)
-\logo{symbol_color.jpg}
+\logo{images/symbol_color.jpg}
 % Publication year
 % \publicationyear{2026}
 % Author portrait/photo (optional - comment out if not needed)
@@ -72,7 +72,7 @@
     IDE, 컴파일러, CI 환경 등 다양한 개발 과정에서 코드 품질과 안정성을 높이기 위해 널리 활용되고 있음.
 
     기존 분석기들은 최종 경고 결과만 제시할 뿐, 어떤 과정을 통해 해당 결과가 도출되었는지는 충분히 보여주지 않음.
-    이로 인해 사용자는 분석 결과가 왜 발생했는지 이해하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이게 됨.
+    이로 인해 사용자는 분석 결과가 왜 발생했는지 이해하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이고 결과를 맹신하게 됨.
 \end{bpbox}
 
 \begin{bpbox}[title={TraceInspector 소개}]
@@ -90,19 +90,27 @@
 \begin{bpcolumns}[3]
     % Left column box
     \begin{bpbox}[title={1: Go 코드 \inleq{\rightarrow} 중간 표현 언어(\inleq{\mathsf{Imp}})}, bptitlebg=transparent]  % Titlebg can be made transparent
-        Go AST보다 간단한 형태의 중간 언어를 사용하여 분석기 구현 및 타 언어 이식 시 용이함.
+        Go AST를 간단한 형태의 \inleq{\mathsf{Imp}} 언어로 번역. 분석기는 \inleq{\mathsf{Imp}} 코드에 대해 동작하며, 분석기 구현 및 타 언어 이식 시 용이하도록 설계.
 
         % Example of including a figure with caption
         \begin{center}
-            \includegraphics[width=\linewidth, height=8cm, keepaspectratio]{example-image-a}%
-            \captionof{figure}{Example figure caption describing the content}
+            \includegraphics[width=\linewidth, height=11cm, keepaspectratio]{images/go2imp.png}%
         \end{center}
     \end{bpbox}
     % Right column box, make sure theres no empty line between boxes! 
     \begin{bpbox}[bptitlebg=transparent, title={2: \inleq{\displaystyle \mathsf{Imp} \rightarrow} 제어 흐름 그래프(CFG)}]  % Titlebg can be made transparent
-        프로그램 내 분기, 반복 등 제어 흐름 단위로 나타내는 제어 흐름 그래프 형태로 표현.
+        프로그램 내 분기, 반복 등의 제어 흐름 단위로 나타내는 제어 흐름 그래프 형태로 표현. 각각의 명령문들은 단일 노드로 표현됨.
+
+        \begin{center}
+            \includegraphics[width=\linewidth, height=11cm, keepaspectratio]{images/imp2cfg.png}%
+        \end{center}
     \end{bpbox}
-    \begin{bpbox}[bptitlebg=transparent, title={3: CFG 위에서 고정점 계산}]
+    \begin{bpbox}[bptitlebg=transparent, title={3: CFG 위에서 고정점 근사}]
+        CFG 노드별 진입 시점에서의 프로그램 상태를 근사. 고정점에 도달할 때까지 반복적으로 요약실행 및 상태 join/widening 수행.
+
+        \begin{center}
+            \includegraphics[width=\linewidth, height=11cm, keepaspectratio]{images/cfg2fixpoint.png}%
+        \end{center}
     \end{bpbox}
 \end{bpcolumns}
 
@@ -126,7 +134,7 @@ func main() {
             \vspace{-0.7\baselineskip}
             무한히 반복되는 코드의 경우 \inleq{n}번의 몸통 실행 후, 계산된 상태에 대해 widening 기법을 적용하여 분석이 종료할 수 있도록 유도.
             이후 flitering을 적용하여 widening 결과를 정제하여 정확도 손실을 방지함. 
-    \end{minipage}
+        \end{minipage}
     \end{bpbox}
     \begin{bpbox}[title={분석 예시: 배열 인덱싱 범위}, bptitlebg=transparent]
         \begin{lstlisting}[language=Go, numbers=left, mathescape]
@@ -134,6 +142,7 @@ i := 1                i: [1, 1]
 for i < len(arr) {    i: [1, 10], len(arr): [10, 10]
     key := arr[i]     i: [1, 9], key: [0, 10]
     arr[i+1] = arr[i] i: [1, 9], key: [0, 10]
+Print(i)              i: [10, 10], key: [0, 10]
         \end{lstlisting}
         \hrule\kern15pt
         배열의 길이와 인덱스 변수에 대한 요약상태를 계산 후, 안전한 인덱싱 범위인지 확인함. 
@@ -157,14 +166,20 @@ for i < len(arr) {    i: [1, 10], len(arr): [10, 10]
 %     \end{minipage}
 % \end{bpbox}
 
-\begin{bpbox}[bpcolor=grey, bpstyle=wide, title={시각화}]
-    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+\begin{bpcolumns}[2]
+    \begin{bpbox}[bpcolor=grey, bpstyle=wide, title={시각화}]
+        \begin{minipage}{0.7\textwidth}
+            \begin{center}
+                    \includegraphics[width=\linewidth, height=14cm, keepaspectratio]{images/Inspector.png}%
+            \end{center}
+        \end{minipage}
+        \begin{minipage}{0.25\textwidth}
+            하단 슬라이더를 통해 프로그램 실행 상태 변화를 관찰할 수 있음.
+        \end{minipage}
 \end{bpbox}
-
-% --- BLOCK 4: LIMITATIONS (Wide Grey Box) ---
-% The title can be put outside the box, by making the title background transparent
 \begin{bpbox}[bpcolor=grey, bpstyle=wide, title={한계 및 향후 계획}]
     Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 \end{bpbox}
+\end{bpcolumns}
 
 \end{document}
