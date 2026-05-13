@@ -56,6 +56,12 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 	case *imp.StringLitExpr:
 		// TODO do something about strings
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
+	case *imp.ArrayLitExpr:
+		var elem_vals []AbstractValue[IntDomainImpl, ArrayDomainImpl]
+		for _, elem_expr := range expr_ty.Elements {
+			elem_vals = append(elem_vals, interpreter.Eval_expr(abs_state, elem_expr))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: interpreter.Arraydomain_default.From_AbstractValues(elem_vals)}
 	case *imp.NegExpr:
 		subexpr_val := interpreter.Eval_expr(abs_state, expr_ty.Subexpr)
 		if subexpr_val.domain_kind != IntDomainKind {
@@ -118,7 +124,7 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 	case *imp.LenExpr:
 		arr_val := interpreter.Eval_expr(abs_state, expr_ty.Subexpr)
 		if arr_val.domain_kind != ArrayDomainKind {
-			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
+			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type but got '%s'", expr_ty, arr_val.domain_kind))
 		}
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: arr_val.Get_array().Len()}
 	case *imp.MakeArrayExpr:
@@ -246,8 +252,8 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) get_abstrac
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Tried to index a non-array value '%s'", expr_ty.Base))
 		}
 		index_val := interpreter.Eval_expr(state, expr_ty.Index)
-		if index_val.domain_kind != ArrayDomainKind {
-			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Index expression '%s' is not an integerdomain", expr_ty.Index))
+		if index_val.domain_kind != IntDomainKind {
+			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Index expression '%s' is not an integerdomain but is '%s'", expr_ty.Index, index_val.domain_kind))
 		}
 		return arr_val.Get_array().GetIndex(index_val.Get_int())
 	}
@@ -515,7 +521,11 @@ func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Run_post_check
 			// check for always true or always false branches, or bot(uncomputable)
 			cond_node, is_cond_node := node.(*CFGCondNode)
 			if is_cond_node {
-				node_eval_info, info_exists := analyzer.function_pre_mem_map[func_name].cond_node_condexpr_vals[node_id]
+				func_pre_mem_map, func_is_analyzed := analyzer.function_pre_mem_map[func_name]
+				if !func_is_analyzed {
+					break
+				}
+				node_eval_info, info_exists := func_pre_mem_map.cond_node_condexpr_vals[node_id]
 				if info_exists {
 					if node_eval_info.IsBot() {
 						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Possible dead branch: boolean expression '%s' evaluates to ⊥", cond_node.Code))

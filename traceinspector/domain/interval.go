@@ -236,7 +236,7 @@ func (lhs IntervalDomain) Greaterthan(rhs IntervalDomain) BoolDomain {
 
 func (lhs IntervalDomain) Leq(rhs IntervalDomain) BoolDomain {
 	if lhs.IsBot() || rhs.IsBot() {
-		return BoolDomain{is_bot: true}
+		return BoolDomain{val: true}
 	}
 	// [x, y] <= [a, b] <-> y <= a /\ y, a are finite
 	if lhs.upper.IsFinite() && rhs.lower.IsFinite() && lhs.upper.Leq(rhs.lower) {
