@@ -4,8 +4,11 @@ package main
 
 func main() {
 	a := 1
-	for a > 0 {
+	for true {
 		a++
+		if a > 5 {
+			break
+		}
 	}
 	Print(a, "bob")
 	Print(a)
