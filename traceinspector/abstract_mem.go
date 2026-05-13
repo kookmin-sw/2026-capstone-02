@@ -2,6 +2,8 @@ package traceinspector
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"traceinspector/domain"
 	"traceinspector/imp"
@@ -118,8 +120,8 @@ type AbstractVarMemMap[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayD
 
 func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) String() string {
 	var ret []string
-	for key, val := range node_mem {
-		ret = append(ret, fmt.Sprintf("%s : %s", key, val))
+	for _, key := range slices.Sorted(maps.Keys(node_mem)) {
+		ret = append(ret, fmt.Sprintf("%s : %s", key, node_mem[key]))
 	}
 	return "{" + strings.Join(ret, ", ") + "}"
 }
