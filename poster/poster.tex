@@ -69,9 +69,9 @@
 % Use bptitle=transparent to make title background blend with page
 \begin{bpbox}[bpcolor=grey, bpstyle=wide, title={배경}]
     정적 분석(Static Analysis)은 프로그램을 실행하지 않고 코드의 실행 특성을 추론하여 잠재적인 오류를 탐지하는 기술이다.
-    IDE, 컴파일러, CI 환경 등 다양한 개발 과정에서 코드 품질과 안정성을 높이기 위해 널리 활용되고 있음.
+    IDE, 컴파일러, CI 등 다양한 개발 과정에서 코드 품질과 안정성을 높이기 위해 활용되고 있음.
 
-    기존 분석기들은 분석 결과만 제시할 뿐 왜 발생했는지 이해하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이고 결과를 맹신하게 됨.
+    기존 분석기들은 분석 결과만 제시할 뿐 어떻게 오류가 탐지되었는지 파악하기 어렵고, 분석 과정을 일종의 “블랙박스”처럼 받아들이고 결과를 맹신하게 됨.
 \end{bpbox}
 
 \begin{bpbox}[title={TraceInspector 소개}]
@@ -173,13 +173,13 @@ Print(i)              i: [10, 10], key: [0, 10]
             \end{center}
         \end{minipage}
         \begin{minipage}{0.25\textwidth}
-            하단 슬라이더를 통해 프로그램 실행 상태 변화를 관찰할 수 있음.
+            분석 과정에서 생성되는 상태 변화를 단계별로 재생 가능하도록 구현함.
         \end{minipage}
 \end{bpbox}
 \begin{bpbox}[bpcolor=grey, bpstyle=wide, title={한계 및 향후 계획}]
     \begin{itemize}
-        \item 관계형 요약도메인 : \texttt{i < len(arr)} 등과 같이 구체적인 값이 아닌 변수간의 논리적 관계를 나태닐 수 있는 대수적 도메인.
-        \item Divide by zero, unreachable code등 보다 다양한 오류 탐지.
+        \item 관계형 요약도메인 : \texttt{i < len(arr)} 등과 같이 구체적인 값이 아닌 변수간의 논리적 관계를 나태낼 수 있는 대수적 도메인.
+        \item Divide by zero, unreachable code등 다양한 오류 탐지 지원.
         \item Pointer inference : 포인터 및 메모리 동작 추상화를 통한 liveness 성질 검증.
         \item \inleq{\mathsf{C} \rightarrow \mathsf{Imp}, \mathsf{Rust} \rightarrow \mathsf{Imp}} 등 \inleq{\mathsf{Imp}}를 활용한 다양한 언어 지원.
         \item 보다 다양한 언어 기능 지원 : 확장된 타입 체계, widening 휴리스틱 등
