@@ -568,6 +568,23 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 		}
 	}
 
+	for func_name, cfg := range g.Function_cfgs {
+		for node_id, node := range cfg.Node_map {
+			// check for always true or always false branches, or bot(uncomputable)
+			cond_node, is_cond_node := node.(*CFGCondNode)
+			if is_cond_node {
+				func_pre_mem_map, func_is_analyzed := g.function_pre_mem_map[func_name]
+				if !func_is_analyzed {
+					break
+				}
+				node_eval_info, info_exists := func_pre_mem_map.cond_node_condexpr_vals[node_id]
+				if info_exists {
+					fmt.Printf("%s : %s\n", cond_node.Code, node_eval_info)
+				}
+			}
+		}
+	}
+
 	// modify the cfg so we print mermaid with global state
 	for fun_name, val := range g.function_pre_mem_map {
 		fmt.Println("---------")

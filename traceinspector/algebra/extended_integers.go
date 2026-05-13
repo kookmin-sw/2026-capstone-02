@@ -63,6 +63,25 @@ func (lhs ExtInt) Eq(rhs ExtInt) bool {
 	return (lhs.is_inf && rhs.is_inf) || (lhs.is_neg_inf && rhs.is_neg_inf) || (lhs.IsFinite() && rhs.IsFinite() && lhs.value == rhs.value)
 }
 
+func (lhs ExtInt) Lessthan(rhs ExtInt) bool {
+	// trivial case
+	if lhs.is_neg_inf {
+		return !rhs.is_neg_inf
+	}
+	if lhs.is_inf {
+		return false
+	}
+	if rhs.is_inf {
+		return !lhs.is_inf
+	}
+	if rhs.is_neg_inf {
+		return false
+	}
+
+	// remaining case is lhs, rhs = Z
+	return lhs.value < rhs.value
+}
+
 func (lhs ExtInt) Leq(rhs ExtInt) bool {
 	// trivial case
 	if lhs.is_neg_inf || rhs.is_inf {
