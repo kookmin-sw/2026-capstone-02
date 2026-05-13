@@ -4,12 +4,8 @@ package main
 
 func main() {
 	a := 1
-	for true {
+	for a > 0 {
 		a++
-		if a > 5 {
-			break
-		}
-	}
-	Print(a, "bob")
+	} // unreachable
 	Print(a)
 }
