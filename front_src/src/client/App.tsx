@@ -429,9 +429,15 @@ function App() {
                     for (let i = 0; i < outNodes.length; i++) {
                         const outNodeID = outNodes[i].Id;
                         const outNodeCode = outNodes[i].Code;
-                        const outSafeCode = outNodeCode.replaceAll("`", "#96;").replaceAll("\"", "#34;");
                         const outNodeType = outNodes[i].Node_type;
                         const outLineNum = outNodes[i].Line_num;
+
+                        const outSafeCode = outNodeCode
+                            .replaceAll("&", "&amp;")
+                            .replaceAll("<", "&lt;")
+                            .replaceAll(">", "&gt;")
+                            .replaceAll("\"", "&quot;")
+                            .replaceAll("`", "&#96;");
 
                         convMermaidSrc += `    id${outNodeID}`
 
