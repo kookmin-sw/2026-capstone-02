@@ -116,7 +116,8 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 		if arr_val.domain_kind != ArrayDomainKind {
 			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
 		}
-		if !index_val.Get_int().Leq(arr_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))).IsTrue() {
+
+		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
 			interpreter.output_handler.write_warning(abs_state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), get_varname_from_lvalue(expr_ty.Base), arr_val.Get_array().Len()))
 		}
 		result_val := arr_val.Get_array().GetIndex(index_val.Get_int())
@@ -281,18 +282,18 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) set_abstrac
 			return
 		}
 		arr_varname := get_varname_from_lvalue(lhs_node.Base)
-		lhs_val, lhs_exists := state.abstract_mem[arr_varname]
+		arr_val, lhs_exists := state.abstract_mem[arr_varname]
 		if !lhs_exists {
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Attempting to index nonexisting variable '%s'", arr_varname))
 		}
-		if lhs_val.domain_kind != ArrayDomainKind {
+		if arr_val.domain_kind != ArrayDomainKind {
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Attempting to index non-array variable '%s'", arr_varname))
 		}
-		// fmt.Println(index_val.Get_int(), "<=", lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1})), "=", index_val.Get_int().Leq(lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))))
-		if !index_val.Get_int().Leq(lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))).IsTrue() {
-			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, lhs_val.Get_array().Len()))
+
+		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
+			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, arr_val.Get_array().Len()))
 		}
-		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: lhs_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
+		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: arr_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
 	case *imp.LenExpr:
 		arr_varname := get_varname_from_lvalue(lhs_node.Subexpr)
 		lhs_val, lhs_exists := state.abstract_mem[arr_varname]
@@ -513,6 +514,13 @@ func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Interpret_func
 	}
 	return analyzer.function_pre_mem_map[function_name].return_value
 	// fmt.Println("Final mem", analyzer.function_pre_mem_map[function_name])
+}
+
+// Returns true if indexing an array of length arr_len_val by index index_val is definitely safe. False otherwise
+func check_array_index_bounds[IntDomainImpl domain.IntegerDomain[IntDomainImpl]](index_val IntDomainImpl, arr_len_val IntDomainImpl) bool {
+	upper_bound := index_val.Lessthan(arr_len_val).IsTrue()                                    // index < arr_len_val
+	lower_bound := index_val.From_IntLitExpr(imp.IntLitExpr{Value: 0}).Leq(index_val).IsTrue() // 0 <= index
+	return upper_bound && lower_bound
 }
 
 func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Run_post_checks() {
