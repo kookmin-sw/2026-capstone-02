@@ -26,4 +26,4 @@ TraceInspector는 요약해석 이론에 따라 프로그램 상태에 대한 *�
 
 ## Gallery
 
-![alt text](Inspector.png)
+![alt text](./docs/Inspector.png)
