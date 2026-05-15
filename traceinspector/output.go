@@ -61,7 +61,7 @@ func (ao *AnalyzerOutputHandler) write_error(node_location CFGNodeLocation, msg 
 }
 
 func (ao *AnalyzerOutputHandler) write_update_node_state(node_location CFGNodeLocation, state_str string, msg string) {
+	ao.state_index++
 	ao.Debugs = append(ao.Debugs, AnalyzerOutput{Type: AnalyzerOutput_update_node, State_index: ao.state_index,
 		Function_name: node_location.Function_name, Line_number: node_location.Line_num, Node_id: node_location.Id, Node_state: state_str, Msg: msg})
-	ao.state_index++
 }
