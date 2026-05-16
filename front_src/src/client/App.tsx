@@ -4,7 +4,7 @@ import "./Main.css";
 import "./Footer.css";
 import "./App.css";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, act } from "react";
 
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState, StateField, StateEffect } from "@codemirror/state";
@@ -13,7 +13,7 @@ import { go } from "@codemirror/lang-go";
 import { dracula } from 'thememirror';
 
 import mermaid from "mermaid";
-import panzoom from "panzoom";
+import panzoom, { type TransformOrigin } from "panzoom";
 
 class Node_t {
     id: number;
@@ -112,12 +112,19 @@ const highlightLineField = StateField.define<DecorationSet>({
     provide: f => EditorView.decorations.from(f)
 });
 
+type PanZoomState = {
+  x: number;
+  y: number;
+  scale: number;
+};
+
 function App() {
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
 
     const tabNames = useRef<string[]>([]);
     const [activeTab, setActiveTab] = useState<number>(-1);
+    const tabPanZoomState = useRef<PanZoomState[]>([])
 
     const mermaidRef = useRef<Mermaid_t>(null);
     const mermaidSrcRef = useRef<HTMLDivElement>(null);
@@ -496,6 +503,12 @@ function App() {
             // Set default tab
             setActiveTab(convMermaidSrcs.length ? 0 : -1);
 
+            tabPanZoomState.current = Array.from({ length: tabNames.current.length }, () => ({
+                x: 0,
+                y: 0,
+                scale: 1,
+            }))
+
         } catch (_err) {
             console.error(`Flowchart generation error!\n`);
             alert(`Flowchart generation error!\n`);
@@ -766,6 +779,7 @@ function App() {
                 panzoomInstanceRef.current = panzoom(svgElement, {
                     maxZoom: 5,
                     minZoom: 0.5,
+                    transformOrigin: {x: 0.5, y: 0.5},
 
                     smoothScroll: false,
 
@@ -774,9 +788,28 @@ function App() {
 
                     beforeMouseDown: (_e: MouseEvent) => false,
                     beforeWheel: (_e: WheelEvent) => false,
+                    onDoubleClick: function(_e) {
+                        tabPanZoomState.current[activeTab].x = 0
+                        tabPanZoomState.current[activeTab].y = 0
+                        tabPanZoomState.current[activeTab].scale = 1
+                        panzoomInstanceRef.current?.zoomTo(0, 0, 1)
+                        panzoomInstanceRef.current?.moveTo(0, 0)
+                        
+                    },
 
                     filterKey: () => true
                 });
+                panzoomInstanceRef.current.on('transform', function (_e) {
+                    if (panzoomInstanceRef.current !== null) {
+                        tabPanZoomState.current[activeTab].x = panzoomInstanceRef.current.getTransform().x
+                        tabPanZoomState.current[activeTab].y = panzoomInstanceRef.current.getTransform().y
+                        tabPanZoomState.current[activeTab].scale = panzoomInstanceRef.current.getTransform().scale
+                    }
+                })
+
+
+                panzoomInstanceRef.current.zoomTo(0, 0, tabPanZoomState.current[activeTab].scale)
+                panzoomInstanceRef.current.moveTo(tabPanZoomState.current[activeTab].x, tabPanZoomState.current[activeTab].y);
             }
 
             requestAnimationFrame(() => {
