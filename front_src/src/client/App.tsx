@@ -4,7 +4,7 @@ import "./Main.css";
 import "./Footer.css";
 import "./App.css";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState, StateField, StateEffect } from "@codemirror/state";
@@ -14,6 +14,12 @@ import { dracula } from 'thememirror';
 
 import mermaid from "mermaid";
 import panzoom from "panzoom";
+
+type ZoomState_t = {
+    x: number;
+    y: number;
+    scale: number;
+};
 
 class Node_t {
     id: number;
@@ -88,6 +94,7 @@ const highlightLineField = StateField.define<DecorationSet>({
     create() {
         return Decoration.none;
     },
+
     update(deco, tr) {
         deco = deco.map(tr.changes);
 
@@ -109,6 +116,7 @@ const highlightLineField = StateField.define<DecorationSet>({
 
         return deco;
     },
+
     provide: f => EditorView.decorations.from(f)
 });
 
@@ -117,13 +125,16 @@ function App() {
     const codeViewRef = useRef<EditorView>(null);
 
     const tabNames = useRef<string[]>([]);
+    const tabZoomStates = useRef<ZoomState_t[]>([]);
     const [activeTab, setActiveTab] = useState<number>(-1);
 
     const mermaidRef = useRef<Mermaid_t>(null);
     const mermaidSrcRef = useRef<HTMLDivElement>(null);
     const [mermaidSrcs, setMermaidSrcs] = useState<string[]>([]);
 
+    const [debugSteps, setDebugSteps] = useState<Debug_t[]>([]);
     const [updateNodeSteps, setUpdateNodeSteps] = useState<Debug_t[]>([]);
+
     const [mermaidSrcsWithState, setMermaidSrcsWithState] = useState<string[]>([]);
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
 
@@ -135,9 +146,45 @@ function App() {
     const [middleWidth, setMiddleWidth] = useState(33.3);
     const [rightWidth, setRightWidth] = useState(33.3);
 
-    const [isDragging, setIsDragging] = useState<null | "left" | "right">(null);
+    const zoomInstanceRef = useRef<ReturnType<typeof panzoom>>(null);
+    const [isDragging, setIsDragging] = useState<"left" | "right" | null>(null);
 
-    const panzoomInstanceRef = useRef<ReturnType<typeof panzoom>>(null);
+    // Build timeline counter map
+    const updateStepIndexMap = useMemo(() => {
+        const map = new Map<number, number>();
+
+        updateNodeSteps.forEach((step, index) => {
+            map.set(step.nodeID, index);
+        });
+
+        return map;
+    }, [updateNodeSteps]);
+
+    // Assign timeline position to debug steps
+    const debugWithTimeline = useMemo(() => {
+        return debugSteps.map((d) => {
+            const time = updateStepIndexMap.get(d.nodeID) ?? -1;
+
+            return {
+                ...d,
+                timeline: time
+            };
+        });
+    }, [debugSteps, updateStepIndexMap]);
+
+    // Filter by slider position
+    const visibleDebugSteps = useMemo(() => {
+        return debugWithTimeline.filter(d => {
+            if (d.timeline === -1) {
+                return true;
+            }
+
+            return d.timeline <= currentStepIndex;
+        });
+    }, [debugWithTimeline, currentStepIndex]);
+
+    // Check if warnings or errors is exist
+    const hasWarningsOrErrors = visibleDebugSteps.some(d => d.type === "warning" || d.type === "error");
 
     // Create code editor view
     useEffect(() => {
@@ -187,7 +234,7 @@ function App() {
         });
     }, []);
 
-    // Call function to render flowchart by condition
+    // Call function to render flowchart if there is no state changes
     useEffect(() => {
         if (mermaidSrcs.length === 0) {
             if (mermaidSrcRef.current) {
@@ -196,7 +243,6 @@ function App() {
             return;
         }
 
-        // If debug step mode is active, do not render normal charts
         if (updateNodeSteps.length > 0) {
             return;
         }
@@ -206,7 +252,7 @@ function App() {
         }
     }, [activeTab, mermaidSrcs, updateNodeSteps]);
 
-    // Call function to render flowchart by another condition
+    // Call function to render flowchart if there is state changes
     useEffect(() => {
         if (
             updateNodeSteps.length > 0 &&
@@ -429,9 +475,15 @@ function App() {
                     for (let i = 0; i < outNodes.length; i++) {
                         const outNodeID = outNodes[i].Id;
                         const outNodeCode = outNodes[i].Code;
-                        const outSafeCode = outNodeCode.replaceAll("`", "#96;").replaceAll("\"", "#34;");
                         const outNodeType = outNodes[i].Node_type;
                         const outLineNum = outNodes[i].Line_num;
+
+                        const outSafeCode = outNodeCode
+                            .replaceAll("&", "&amp;")
+                            .replaceAll("<", "&lt;")
+                            .replaceAll(">", "&gt;")
+                            .replaceAll("\"", "&quot;")
+                            .replaceAll("`", "&#96;");
 
                         convMermaidSrc += `    id${outNodeID}`
 
@@ -490,10 +542,58 @@ function App() {
             // Set default tab
             setActiveTab(convMermaidSrcs.length ? 0 : -1);
 
+            // Initialize zoom state
+            tabZoomStates.current = Array.from({ length: tabNames.current.length }, () => ({
+                x: 0,
+                y: 0,
+                scale: 1,
+            }))
+
         } catch (_err) {
             console.error(`Flowchart generation error!\n`);
             alert(`Flowchart generation error!\n`);
         }
+    };
+
+    // Format node state to look clean
+    const formatNodeState = (state: string): string => {
+        if (!state || state === "{}")
+            return state;
+
+        let trimmed = state.trim();
+
+        // Remove only outermost braces
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            trimmed = trimmed.slice(1, -1);
+        }
+
+        let result = "";
+        let depth = 0;
+
+        for (let i = 0; i < trimmed.length; i++) {
+            const ch = trimmed[i];
+
+            // Split only on top-level commas
+            if (ch === "," && depth === 0) {
+                result += "\n";
+                continue;
+            }
+
+            result += ch;
+
+            // Update nesting AFTER processing current char
+            if (ch === "{" || ch === "[" || ch === "(") {
+                depth++;
+            }
+            else if (ch === "}" || ch === "]" || ch === ")") {
+                depth--;
+            }
+        }
+
+        return result
+            .split("\n")
+            .map(line => line.trim())
+            .join("\n");
     };
 
     // Run inspector again and print debugs
@@ -526,66 +626,15 @@ function App() {
                     const outType: string = output.Debugs[i].Type;
                     const outFuncName: string = output.Debugs[i].Function_name;
                     const outNodeID: number = output.Debugs[i].Node_id;
-                    const outNodeState: string = output.Debugs[i].Node_state;
+                    const outNodeState: string = formatNodeState(output.Debugs[i].Node_state);
                     const outMessage: string = output.Debugs[i].Msg;
                     const outLineNum: number = output.Debugs[i].Line_number;
 
                     outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage, outLineNum));
                 }
-
-                // Get HTML div element
-                const logBox = document.getElementById("logBox");
-
-                if (logBox) {
-                    // Clear previous content
-                    logBox.innerHTML = "";
-
-                    // Create HTML table
-                    const table = document.createElement("table");
-                    table.className = "debug-table";
-
-                    // Create thead
-                    const thead = table.createTHead();
-                    const headerRow = thead.insertRow();
-                    ["Type", "Function", "Line", "Message"].forEach((h) => {
-                        const th = document.createElement("th");
-                        th.textContent = h;
-                        headerRow.appendChild(th);
-                    });
-
-                    // Create tbody
-                    const tbody = table.createTBody();
-
-                    // Append rows
-                    for (let i = 0; i < outDebugs.length; i++) {
-                        if (outDebugs[i].type !== "update_node") {
-                            const row = tbody.insertRow();
-                            const cType = row.insertCell();
-                            const cFuncName = row.insertCell();
-                            const cLineNum = row.insertCell();
-                            const cMessage = row.insertCell();
-
-                            const isWarning = outDebugs[i].type === "warning";
-                            const isError = outDebugs[i].type === "error";
-
-                            const iconText = isWarning ? "\uea6c" : isError ? "\uea87" : "\uea74";
-                            const iconSpan = document.createElement("span");
-                            iconSpan.textContent = iconText;
-                            iconSpan.className = `icon-${outDebugs[i].type}`;
-
-                            cType.appendChild(iconSpan);
-                            cFuncName.textContent = outDebugs[i].funcName;
-                            cLineNum.textContent = outDebugs[i].lineNum.toString();
-                            cMessage.textContent = outDebugs[i].message;
-
-                            row.className = `debug-${outDebugs[i].type}`;
-                        }
-                    }
-
-                    // Append table to logBox
-                    logBox.appendChild(table);
-                }
             }
+
+            setDebugSteps(outDebugs);
 
             return outDebugs;
 
@@ -596,7 +645,32 @@ function App() {
         }
     };
 
-    // Configure Debug Changes
+    // Format state output with colors 
+    const formatStateOutput = (prev: string, curr: string): string => {
+        const prevLines = prev.split("\n");
+        const currLines = curr.split("\n");
+
+        return currLines
+            .map((line, index) => {
+                const escaped = line
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll("\"", "&quot;")
+                    .replaceAll("`", "&#96;");
+
+                // Changed line
+                if (prevLines[index] !== line) {
+                    return `<span style="color:#ff5555">${escaped}</span>`;
+                }
+
+                // Unchanged line
+                return `<span style="color:#f1fa8c">${escaped}</span>`;
+            })
+            .join("<br/>");
+    };
+
+    // Configure debug changes
     const configureDebugChanges = async (debugData: Debug_t[]) => {
         // Extract "update_node" debug objects
         const updateNodes = debugData.filter(d => d.type === "update_node");
@@ -630,17 +704,23 @@ function App() {
 
                     convMermaidSrc += `    id${outNodeID}`
 
+                    const prevState = outNode.state || "";
+
                     if (outNodeID === targetNodeID) {
                         if (targetNodeState !== "{}") {
                             outNode.state = targetNodeState;
                         }
                     }
 
+                    const formattedState = outNode.state
+                        ? `${formatStateOutput(prevState, outNode.state)}<br/><br/>`
+                        : "";
+
                     if (outNodeType === "basic") {
-                        convMermaidSrc += `[\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"]`;
+                        convMermaidSrc += `[\"\`${formattedState}${outNodeCode}\`\"]`;
                     }
                     else if (outNodeType === "cond") {
-                        convMermaidSrc += `{\"\`<span style='color:#f1fa8c'>${outNode.state}</span>${(outNode.state) ? `<br/>` : ``}${outNodeCode} \`\"}`;
+                        convMermaidSrc += `{\"\`${formattedState}${outNodeCode}\`\"}`;
                     }
 
                     convMermaidSrc += `\n`;
@@ -675,6 +755,7 @@ function App() {
         }
     };
 
+    // Set current step index for timeline slider
     const handleSliderChange = (newIndex: number) => {
         setCurrentStepIndex(newIndex);
 
@@ -705,16 +786,17 @@ function App() {
 
             mermaidSrcRef.current.innerHTML = `<div id="${mermaidId}" class="mermaid-wrapper">${svg}</div>`;
 
-            if (panzoomInstanceRef.current) {
-                panzoomInstanceRef.current.dispose();
+            if (zoomInstanceRef.current) {
+                zoomInstanceRef.current.dispose();
             }
 
             const svgElement = mermaidSrcRef.current.querySelector("svg");
 
             if (svgElement) {
-                panzoomInstanceRef.current = panzoom(svgElement, {
+                zoomInstanceRef.current = panzoom(svgElement, {
                     maxZoom: 5,
                     minZoom: 0.5,
+                    transformOrigin: { x: 0.5, y: 0.5 },
 
                     smoothScroll: false,
 
@@ -723,9 +805,29 @@ function App() {
 
                     beforeMouseDown: (_e: MouseEvent) => false,
                     beforeWheel: (_e: WheelEvent) => false,
+                    onDoubleClick: function (_e) {
+                        tabZoomStates.current[activeTab].x = 0
+                        tabZoomStates.current[activeTab].y = 0
+                        tabZoomStates.current[activeTab].scale = 1
+                        zoomInstanceRef.current?.zoomTo(0, 0, 1)
+                        zoomInstanceRef.current?.moveTo(0, 0)
+
+                    },
 
                     filterKey: () => true
                 });
+
+                zoomInstanceRef.current.on('transform', (_e) => {
+                    if (zoomInstanceRef.current !== null) {
+                        tabZoomStates.current[activeTab].x = zoomInstanceRef.current.getTransform().x
+                        tabZoomStates.current[activeTab].y = zoomInstanceRef.current.getTransform().y
+                        tabZoomStates.current[activeTab].scale = zoomInstanceRef.current.getTransform().scale
+                    }
+                });
+
+
+                zoomInstanceRef.current.zoomTo(0, 0, tabZoomStates.current[activeTab].scale);
+                zoomInstanceRef.current.moveTo(tabZoomStates.current[activeTab].x, tabZoomStates.current[activeTab].y);
             }
 
             requestAnimationFrame(() => {
@@ -766,9 +868,9 @@ function App() {
             // Run inspector and print debugs
             const debugData = await handlePrintDebugs();
 
-            // Configure Debug Changes
+            // Configure debug changes
             await configureDebugChanges(debugData);
-            
+
         } catch (_err) {
             console.error(`Inspection error!\n`);
             alert(`Inspection error!\n`);
@@ -782,9 +884,9 @@ function App() {
                     <div id="headTitle">TraceInspector</div>
                 </div>
                 <div className="headBoxes" id="headButtonBox">
-                    <button onClick={handleFileClick} className="headButtons" id="openButton">Open</button>
+                    <button onClick={handleFileClick} className="headButtons" id="openButton">&#xf07c; Open</button>
                     <input id="fileInput" type="file" accept=".go" onChange={handleFileChange} style={{ display: "none" }} />
-                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>Run</button>
+                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>&#xeb9e; Run</button>
                 </div>
                 <br /><br /><br /><br /><hr /><br />
             </header>
@@ -818,16 +920,59 @@ function App() {
                     <div ref={mermaidSrcRef} className="mermaid-container" />
                 </div>
                 <div className="resize-bar" onMouseDown={() => setIsDragging("right")} />
-                <div className="mainBoxes" id="logBox" style={{ width: `${rightWidth}%` }} />
+                <div className="mainBoxes" id="logBox" style={{ width: `${rightWidth}%` }}>
+                    <table className="debug-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Function</th>
+                                <th>Line</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {!hasWarningsOrErrors ? (
+                                <tr>
+                                    <td colSpan={4} style={{ textAlign: "center", padding: "12px", color: "#50fa7b"}}>
+                                        &#xf00c; No warnings or errors found!
+                                    </td>
+                                </tr>
+                            ) : (visibleDebugSteps
+                                .filter(debugStep => debugStep.type !== "update_node")
+                                .map((debugStep, index) => {
+                                    const isWarning = debugStep.type === "warning";
+                                    const isError = debugStep.type === "error";
+
+                                    const icon = isWarning ? "\uea6c" : isError ? "\uea87" : "\uea74";
+
+                                    return (
+                                        <tr key={index} className={`debug-${debugStep.type}`}
+                                            onClick={() => { if (debugStep.timeline !== -1) { handleSliderChange(debugStep.timeline); }}}
+                                            style={{ cursor: debugStep.timeline !== -1 ? "pointer" : "default" }}>
+                                            <td>
+                                                <span className={`icon-${debugStep.type}`}>{icon}</span>
+                                            </td>
+                                            <td>{debugStep.funcName}</td>
+                                            <td>{debugStep.lineNum}</td>
+                                            <td>{debugStep.message}</td>
+                                        </tr>
+                                    );
+                                }))}
+                        </tbody>
+                    </table>
+                </div>
             </main>
             <footer>
                 {updateNodeSteps.length > 0 && (
                     <div className="step-control">
                         <div className="step-attr">
-                            {currentStepIndex + 1} / {updateNodeSteps.length} | 
+                            {currentStepIndex + 1} / {updateNodeSteps.length} |
                             Functions: {updateNodeSteps[currentStepIndex]?.funcName} |
                             Line: {updateNodeSteps[currentStepIndex]?.lineNum} |
-                            Node State: {updateNodeSteps[currentStepIndex]?.nodeState}
+                            Node State: {(updateNodeSteps[currentStepIndex]?.nodeState !== "{}") ?
+                                <span style={{ color: `#f1fa8c` }}>{updateNodeSteps[currentStepIndex]?.nodeState}</span> :
+                                <span style={{ color: `#f1fa8c` }}>None</span>}
                         </div>
                         <br /><br /><br /><br />
                         <input
@@ -835,10 +980,7 @@ function App() {
                             min="0"
                             max={updateNodeSteps.length - 1}
                             value={currentStepIndex}
-                            onChange={(e) => {
-                                const newIndex = Number(e.target.value);
-                                handleSliderChange(newIndex);
-                            }}
+                            onChange={(e) => handleSliderChange(Number(e.target.value))}
                             className="step-slider"
                         />
                     </div>
