@@ -2,6 +2,8 @@ package traceinspector
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"traceinspector/domain"
 	"traceinspector/imp"
@@ -118,8 +120,8 @@ type AbstractVarMemMap[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayD
 
 func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) String() string {
 	var ret []string
-	for key, val := range node_mem {
-		ret = append(ret, fmt.Sprintf("%s : %s", key, val))
+	for _, key := range slices.Sorted(maps.Keys(node_mem)) {
+		ret = append(ret, fmt.Sprintf("%s : %s", key, node_mem[key]))
 	}
 	return "{" + strings.Join(ret, ", ") + "}"
 }
@@ -159,6 +161,19 @@ func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) Join_inplace(o
 		node_mem[key] = joined
 	}
 	return changed
+}
+
+func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) SetBot_inplace() {
+	for key, val := range node_mem {
+		switch val.domain_kind {
+		case IntDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: val.Get_int().CreateBot()}
+		case BoolDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: val.Get_bool().CreateBot()}
+		case ArrayDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: val.Get_array().CreateBot()}
+		}
+	}
 }
 
 func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) Widen_inplace(other_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) {
@@ -204,10 +219,11 @@ func (mem_map AbstractNodeMemMap[IntDomainImpl, ArrayDomainImpl]) String() strin
 // pre_mem represents the memory state at the **entry of a node - before executing the node**.
 // the return value is also an abstraction of the possible return values
 type AbstractFunctionMem[IntDomainImpl domain.IntegerDomain[IntDomainImpl], ArrayDomainImpl domain.AbstractDomain[ArrayDomainImpl]] struct {
-	pre_mem_node_map AbstractNodeMemMap[IntDomainImpl, ArrayDomainImpl]
-	function_name    imp.ImpFunctionName
-	n_visits         map[NodeID]int
-	return_value     AbstractValue[IntDomainImpl, ArrayDomainImpl]
+	pre_mem_node_map        AbstractNodeMemMap[IntDomainImpl, ArrayDomainImpl]
+	cond_node_condexpr_vals map[NodeID]domain.BoolDomain // denotes the abstract value of evaluation conditions in cond nodes
+	function_name           imp.ImpFunctionName
+	n_visits                map[NodeID]int
+	return_value            AbstractValue[IntDomainImpl, ArrayDomainImpl]
 }
 
 func (func_mem AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]) String() string {
@@ -216,6 +232,7 @@ func (func_mem AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]) String() str
 
 func (func_mem *AbstractFunctionMem[IntDomainImpl, ArrayDomainImpl]) Initialize(function_def imp.ImpFunction, function_cfg *CFGGraph, initial_node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) {
 	func_mem.pre_mem_node_map = make(AbstractNodeMemMap[IntDomainImpl, ArrayDomainImpl])
+	func_mem.cond_node_condexpr_vals = make(map[NodeID]domain.BoolDomain)
 	func_mem.n_visits = make(map[NodeID]int)
 	func_mem.function_name = imp.ImpFunctionName(function_def.Name)
 	for node_id := range function_cfg.Node_map {

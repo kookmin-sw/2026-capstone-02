@@ -13,7 +13,7 @@ import { go } from "@codemirror/lang-go";
 import { dracula } from 'thememirror';
 
 import mermaid from "mermaid";
-import panzoom from "panzoom";
+import panzoom, { type TransformOrigin } from "panzoom";
 
 type ZoomState_t = {
     x: number;
@@ -120,6 +120,12 @@ const highlightLineField = StateField.define<DecorationSet>({
     provide: f => EditorView.decorations.from(f)
 });
 
+type PanZoomState = {
+  x: number;
+  y: number;
+  scale: number;
+};
+
 function App() {
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
@@ -127,6 +133,7 @@ function App() {
     const tabNames = useRef<string[]>([]);
     const tabZoomStates = useRef<ZoomState_t[]>([]);
     const [activeTab, setActiveTab] = useState<number>(-1);
+    const tabPanZoomState = useRef<PanZoomState[]>([])
 
     const mermaidRef = useRef<Mermaid_t>(null);
     const mermaidSrcRef = useRef<HTMLDivElement>(null);

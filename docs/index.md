@@ -1,8 +1,12 @@
 # TraceInspector
 
-An interactive, visualizing static analyzer for Go programs.
+추적 가능한 시각화 기반 코드 정적분석기
 
-Capstone team 2: 김신영, 강민성
+캡스톤 프로젝트 2번째 팀<br>
+20212978 김신영<br>
+20212952 강민성<br>
+
+![alt text](./Inspector2.png)
 
 ## Introduction
 
@@ -23,7 +27,3 @@ TraceInspector는 상술했듯이 단순히 경보만 출력하고 종료되지 
 우측 창은 입력 소스에서 잠재적으로 발생할 수 있는 경보나, 분석 중 오류가 발생한 경우 해당 정보를 출력합니다. 
 
 TraceInspector는 요약해석 이론에 따라 프로그램 상태에 대한 *보수적인* 근사를 계산합니다. 즉 실제로는 계산되지 않을 값이나 실행 경로를 반영하여 허위 경보를 표출할 수 있습니다. 하지만 실행 가능한 *모든* 프로그램 경로를 항상 반영하기에, 오류가 발생하지 않는다고 판정될 경우 실제 실행 시 오류가 발생하지 않음이 수학적으로 보장됩니다.
-
-## Gallery
-
-![alt text](inspector_error.png)

@@ -112,7 +112,7 @@ func (arr ArraySummaryDomain[IntDomainImpl]) From_AbstractValues(vals []Abstract
 			panic("arraysummarydomain From_AbstractValues unimplemented")
 		}
 	}
-	return ArraySummaryDomain[IntDomainImpl]{val: base.Get_int()}
+	return ArraySummaryDomain[IntDomainImpl]{length: arr.Len().From_IntLitExpr(imp.IntLitExpr{Node: imp.Node{}, Value: len(vals)}), val: base.Get_int()}
 }
 
 func (arr ArraySummaryDomain[IntDomainImpl]) Make_array(len_dom IntDomainImpl, default_value AbstractValue[IntDomainImpl, ArraySummaryDomain[IntDomainImpl]]) ArraySummaryDomain[IntDomainImpl] {

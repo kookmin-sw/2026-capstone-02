@@ -56,6 +56,12 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 	case *imp.StringLitExpr:
 		// TODO do something about strings
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{}
+	case *imp.ArrayLitExpr:
+		var elem_vals []AbstractValue[IntDomainImpl, ArrayDomainImpl]
+		for _, elem_expr := range expr_ty.Elements {
+			elem_vals = append(elem_vals, interpreter.Eval_expr(abs_state, elem_expr))
+		}
+		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: interpreter.Arraydomain_default.From_AbstractValues(elem_vals)}
 	case *imp.NegExpr:
 		subexpr_val := interpreter.Eval_expr(abs_state, expr_ty.Subexpr)
 		if subexpr_val.domain_kind != IntDomainKind {
@@ -110,7 +116,8 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 		if arr_val.domain_kind != ArrayDomainKind {
 			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
 		}
-		if !index_val.Get_int().Leq(arr_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))).IsTrue() {
+
+		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
 			interpreter.output_handler.write_warning(abs_state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), get_varname_from_lvalue(expr_ty.Base), arr_val.Get_array().Len()))
 		}
 		result_val := arr_val.Get_array().GetIndex(index_val.Get_int())
@@ -118,7 +125,7 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 	case *imp.LenExpr:
 		arr_val := interpreter.Eval_expr(abs_state, expr_ty.Subexpr)
 		if arr_val.domain_kind != ArrayDomainKind {
-			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type", expr_ty))
+			interpreter.output_handler.write_error(abs_state.node_location, fmt.Sprintf("'%s' : expected arr to have arr domain type but got '%s'", expr_ty, arr_val.domain_kind))
 		}
 		return AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: arr_val.Get_array().Len()}
 	case *imp.MakeArrayExpr:
@@ -246,8 +253,8 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) get_abstrac
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Tried to index a non-array value '%s'", expr_ty.Base))
 		}
 		index_val := interpreter.Eval_expr(state, expr_ty.Index)
-		if index_val.domain_kind != ArrayDomainKind {
-			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Index expression '%s' is not an integerdomain", expr_ty.Index))
+		if index_val.domain_kind != IntDomainKind {
+			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Index expression '%s' is not an integerdomain but is '%s'", expr_ty.Index, index_val.domain_kind))
 		}
 		return arr_val.Get_array().GetIndex(index_val.Get_int())
 	}
@@ -275,18 +282,18 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) set_abstrac
 			return
 		}
 		arr_varname := get_varname_from_lvalue(lhs_node.Base)
-		lhs_val, lhs_exists := state.abstract_mem[arr_varname]
+		arr_val, lhs_exists := state.abstract_mem[arr_varname]
 		if !lhs_exists {
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Attempting to index nonexisting variable '%s'", arr_varname))
 		}
-		if lhs_val.domain_kind != ArrayDomainKind {
+		if arr_val.domain_kind != ArrayDomainKind {
 			interpreter.output_handler.write_error(state.node_location, fmt.Sprintf("Attempting to index non-array variable '%s'", arr_varname))
 		}
-		// fmt.Println(index_val.Get_int(), "<=", lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1})), "=", index_val.Get_int().Leq(lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))))
-		if !index_val.Get_int().Leq(lhs_val.Get_array().Len().Sub(index_val.int_domain.From_IntLitExpr(imp.IntLitExpr{Value: 1}))).IsTrue() {
-			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, lhs_val.Get_array().Len()))
+
+		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
+			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, arr_val.Get_array().Len()))
 		}
-		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: lhs_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
+		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: arr_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
 	case *imp.LenExpr:
 		arr_varname := get_varname_from_lvalue(lhs_node.Subexpr)
 		lhs_val, lhs_exists := state.abstract_mem[arr_varname]
@@ -403,10 +410,23 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 		// We can just execute only the corresponding branch.
 		// Otherwise filter for each branch and join the result
 		cond_val := interpreter.Eval_expr(in_state, cfg_node.Cond_expr)
+
+		// cache the result of evaluating conditionals to detect dead branches later on
+		prev_condval, prev_condval_exists := interpreter.function_pre_mem_map[func_name].cond_node_condexpr_vals[in_state.node_location.Id]
+		if !prev_condval_exists {
+			interpreter.function_pre_mem_map[func_name].cond_node_condexpr_vals[in_state.node_location.Id] = cond_val.Get_bool()
+		} else {
+			new_condval, _ := prev_condval.Join(cond_val.Get_bool())
+			interpreter.function_pre_mem_map[func_name].cond_node_condexpr_vals[in_state.node_location.Id] = new_condval
+		}
+
+		cond_bool_lit_node, cond_is_bool_lit := cfg_node.Cond_expr.(*imp.BoolLitExpr)
 		// Try to represent it as SimpleProp
 		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
 		if !simpleprop_success {
-			interpreter.output_handler.write_warning(in_state.node_location, fmt.Sprintf("Could not represent '%s' as SimpleProp. Analysis precision may severely deterioriate.", cfg_node.Cond_expr))
+			if !cond_is_bool_lit {
+				interpreter.output_handler.write_warning(in_state.node_location, fmt.Sprintf("Could not represent '%s' as SimpleProp. Analysis precision may severely deterioriate.", cfg_node.Cond_expr))
+			}
 		}
 		if cond_val.Get_bool().IsBot() { // dead branch
 			return nil
@@ -444,6 +464,10 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 						interpreter.set_abstract_value_from_expr(filter.Term_expr, updated_val, &new_state)
 					}
 				}
+			} else if cond_is_bool_lit && cond_bool_lit_node.Value == true {
+				// fmt.Println("Setzero")
+				new_state.abstract_mem.SetBot_inplace()
+
 			}
 			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem, remaining_call_depth: in_state.remaining_call_depth})
 		}
@@ -499,6 +523,38 @@ func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Interpret_func
 	// fmt.Println("Final mem", analyzer.function_pre_mem_map[function_name])
 }
 
+// Returns true if indexing an array of length arr_len_val by index index_val is definitely safe. False otherwise
+func check_array_index_bounds[IntDomainImpl domain.IntegerDomain[IntDomainImpl]](index_val IntDomainImpl, arr_len_val IntDomainImpl) bool {
+	upper_bound := index_val.Lessthan(arr_len_val).IsTrue()                                    // index < arr_len_val
+	lower_bound := index_val.From_IntLitExpr(imp.IntLitExpr{Value: 0}).Leq(index_val).IsTrue() // 0 <= index
+	return upper_bound && lower_bound
+}
+
+func (analyzer *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Run_post_checks() {
+	for func_name, cfg := range analyzer.Function_cfgs {
+		for node_id, node := range cfg.Node_map {
+			// check for always true or always false branches, or bot(uncomputable)
+			cond_node, is_cond_node := node.(*CFGCondNode)
+			if is_cond_node {
+				func_pre_mem_map, func_is_analyzed := analyzer.function_pre_mem_map[func_name]
+				if !func_is_analyzed {
+					break
+				}
+				node_eval_info, info_exists := func_pre_mem_map.cond_node_condexpr_vals[node_id]
+				if info_exists {
+					if node_eval_info.IsBot() {
+						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Possible dead branch: boolean expression '%s' evaluates to ⊥", cond_node.Code))
+					} else if node_eval_info.IsFalse() {
+						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Dead branch: boolean expression '%s' always evaluates to false", cond_node.Code))
+					} else if node_eval_info.IsTrue() {
+						analyzer.output_handler.write_warning(cond_node.Loc, fmt.Sprintf("Dead branch: boolean expression '%s' always evaluates to true", cond_node.Code))
+					}
+				}
+			}
+		}
+	}
+}
+
 func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_map imp.ImpFunctionMap, debug bool) {
 	g := AbstractAnalyzer[domain.IntervalDomain, ArraySummaryDomain[domain.IntervalDomain]]{
 		Function_cfgs: func_cfg_map,
@@ -513,6 +569,7 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 	}
 	g.Initialize()
 	g.Run_analysis()
+	g.Run_post_checks()
 	g.output_handler.Print()
 	if !debug {
 		return
@@ -523,6 +580,23 @@ func Test(func_cfg_map FunctionCFGMap, func_name imp.ImpFunctionName, func_info_
 		fmt.Println(key)
 		for nid, nval := range val.pre_mem_node_map {
 			fmt.Println(nid, ":", nval)
+		}
+	}
+
+	for func_name, cfg := range g.Function_cfgs {
+		for node_id, node := range cfg.Node_map {
+			// check for always true or always false branches, or bot(uncomputable)
+			cond_node, is_cond_node := node.(*CFGCondNode)
+			if is_cond_node {
+				func_pre_mem_map, func_is_analyzed := g.function_pre_mem_map[func_name]
+				if !func_is_analyzed {
+					break
+				}
+				node_eval_info, info_exists := func_pre_mem_map.cond_node_condexpr_vals[node_id]
+				if info_exists {
+					fmt.Printf("%s : %s\n", cond_node.Code, node_eval_info)
+				}
+			}
 		}
 	}
 
