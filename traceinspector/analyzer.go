@@ -420,10 +420,13 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 			interpreter.function_pre_mem_map[func_name].cond_node_condexpr_vals[in_state.node_location.Id] = new_condval
 		}
 
+		cond_bool_lit_node, cond_is_bool_lit := cfg_node.Cond_expr.(*imp.BoolLitExpr)
 		// Try to represent it as SimpleProp
 		cond_simpleprop, simpleprop_success := algebra.Imp_expr_to_simple_prop(cfg_node.Cond_expr)
 		if !simpleprop_success {
-			interpreter.output_handler.write_warning(in_state.node_location, fmt.Sprintf("Could not represent '%s' as SimpleProp. Analysis precision may severely deterioriate.", cfg_node.Cond_expr))
+			if !cond_is_bool_lit {
+				interpreter.output_handler.write_warning(in_state.node_location, fmt.Sprintf("Could not represent '%s' as SimpleProp. Analysis precision may severely deterioriate.", cfg_node.Cond_expr))
+			}
 		}
 		if cond_val.Get_bool().IsBot() { // dead branch
 			return nil
@@ -461,6 +464,10 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Step(in_sta
 						interpreter.set_abstract_value_from_expr(filter.Term_expr, updated_val, &new_state)
 					}
 				}
+			} else if cond_is_bool_lit && cond_bool_lit_node.Value == true {
+				// fmt.Println("Setzero")
+				new_state.abstract_mem.SetBot_inplace()
+
 			}
 			return_states = append(return_states, AbstractState[IntDomainImpl, ArrayDomainImpl]{node_location: cond_edge.To_false_node_loc, abstract_mem: new_state.abstract_mem, remaining_call_depth: in_state.remaining_call_depth})
 		}

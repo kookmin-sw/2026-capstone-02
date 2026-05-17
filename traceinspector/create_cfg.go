@@ -57,7 +57,7 @@ func (creator *CFGGraphCreator) get_top_context_destination() CFGNodeLocation {
 	for stack_index := len(creator.cfg_context_stack) - 1; stack_index >= 0; stack_index-- {
 		switch ctx := creator.cfg_context_stack[stack_index].(type) {
 		case CFGLoopContext:
-			if ctx.exit_node_loc.Id > 0 {
+			if ctx.head_node_loc.Id > 0 {
 				return ctx.head_node_loc
 			}
 		case CFGBranchContext:
@@ -165,10 +165,10 @@ func (graphcreator *CFGGraphCreator) create_cfg_method(stmts []imp.Stmt) CFGNode
 		cond_node_loc := graphcreator.create_cfg_cond_node(stmt_ty.Cond, stmt_ty.GetLineNum(), true)
 
 		graphcreator.push_loop_context(cond_node_loc, next_node_loc)
-		body_node_id := graphcreator.create_cfg_method(stmt_ty.Body_stmt)
+		body_node_loc := graphcreator.create_cfg_method(stmt_ty.Body_stmt)
 		// graphcreator.create_cfg_edge(cond_node_id, body_node_id, "True")
 		// graphcreator.create_cfg_edge(cond_node_id, next_node_id, "False")
-		graphcreator.create_cfg_cond_edge(cond_node_loc, body_node_id, next_node_loc)
+		graphcreator.create_cfg_cond_edge(cond_node_loc, body_node_loc, next_node_loc)
 		graphcreator.pop_context()
 
 		created_node_loc = cond_node_loc

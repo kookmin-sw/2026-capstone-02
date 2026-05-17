@@ -163,6 +163,19 @@ func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) Join_inplace(o
 	return changed
 }
 
+func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) SetBot_inplace() {
+	for key, val := range node_mem {
+		switch val.domain_kind {
+		case IntDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: IntDomainKind, int_domain: val.Get_int().CreateBot()}
+		case BoolDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: BoolDomainKind, bool_domain: val.Get_bool().CreateBot()}
+		case ArrayDomainKind:
+			node_mem[key] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: val.Get_array().CreateBot()}
+		}
+	}
+}
+
 func (node_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) Widen_inplace(other_mem AbstractVarMemMap[IntDomainImpl, ArrayDomainImpl]) {
 	for key, val := range other_mem {
 		original_val, original_exists := node_mem[key]
