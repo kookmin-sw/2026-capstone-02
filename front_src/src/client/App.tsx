@@ -13,7 +13,7 @@ import { go } from "@codemirror/lang-go";
 import { dracula } from 'thememirror';
 
 import mermaid from "mermaid";
-import panzoom, { type TransformOrigin } from "panzoom";
+import panzoom from "panzoom";
 
 type ZoomState_t = {
     x: number;
@@ -120,12 +120,6 @@ const highlightLineField = StateField.define<DecorationSet>({
     provide: f => EditorView.decorations.from(f)
 });
 
-type PanZoomState = {
-  x: number;
-  y: number;
-  scale: number;
-};
-
 function App() {
     const codeEditorRef = useRef<HTMLDivElement>(null);
     const codeViewRef = useRef<EditorView>(null);
@@ -133,7 +127,6 @@ function App() {
     const tabNames = useRef<string[]>([]);
     const tabZoomStates = useRef<ZoomState_t[]>([]);
     const [activeTab, setActiveTab] = useState<number>(-1);
-    const tabPanZoomState = useRef<PanZoomState[]>([])
 
     const mermaidRef = useRef<Mermaid_t>(null);
     const mermaidSrcRef = useRef<HTMLDivElement>(null);
@@ -155,6 +148,9 @@ function App() {
 
     const zoomInstanceRef = useRef<ReturnType<typeof panzoom>>(null);
     const [isDragging, setIsDragging] = useState<"left" | "right" | null>(null);
+
+    const playbackIntervalRef = useRef<number>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
     // Build timeline counter map
     const updateStepIndexMap = useMemo(() => {
@@ -192,6 +188,56 @@ function App() {
 
     // Check if warnings or errors is exist
     const hasWarningsOrErrors = visibleDebugSteps.some(d => d.type === "warning" || d.type === "error");
+
+    // Link button and handler for timeline playback
+    const handlePlayPause = () => {
+        if (updateNodeSteps.length === 0)
+            return;
+
+        // Restart if already at end
+        if (currentStepIndex >= updateNodeSteps.length - 1) {
+            setCurrentStepIndex(0);
+        }
+
+        setIsPlaying((prev) => !prev);
+    };
+
+    // Enable timeline playback function
+    useEffect(() => {
+        if (!isPlaying || updateNodeSteps.length === 0)
+            return;
+
+        playbackIntervalRef.current = window.setInterval(() => {
+            setCurrentStepIndex((prev) => {
+                const next = prev + 1;
+
+                if (next >= updateNodeSteps.length) {
+                    setIsPlaying(false);
+                    return prev;
+                }
+
+                const step = updateNodeSteps[next];
+
+                if (step) {
+                    const tabIndex = tabNames.current.findIndex(
+                        (name) => name === step.funcName
+                    );
+
+                    if (tabIndex !== -1) {
+                        setActiveTab(tabIndex);
+                    }
+                }
+
+                return next;
+            });
+        }, 1000); // Milliseconds
+
+        return () => {
+            if (playbackIntervalRef.current !== null) {
+                clearInterval(playbackIntervalRef.current);
+            }
+        };
+    }, [isPlaying, updateNodeSteps]);
 
     // Create code editor view
     useEffect(() => {
@@ -764,12 +810,16 @@ function App() {
 
     // Set current step index for timeline slider
     const handleSliderChange = (newIndex: number) => {
+        setIsPlaying(false);
+
         setCurrentStepIndex(newIndex);
 
         const step = updateNodeSteps[newIndex];
 
         if (step) {
-            const tabIndex = tabNames.current.findIndex((name) => name === step.funcName);
+            const tabIndex = tabNames.current.findIndex(
+                (name) => name === step.funcName
+            );
 
             if (tabIndex !== -1) {
                 setActiveTab(tabIndex);
@@ -893,7 +943,8 @@ function App() {
                 <div className="headBoxes" id="headButtonBox">
                     <button onClick={handleFileClick} className="headButtons" id="openButton">&#xf07c; Open</button>
                     <input id="fileInput" type="file" accept=".go" onChange={handleFileChange} style={{ display: "none" }} />
-                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>&#xeb9e; Run</button>
+                    <button className="headButtons" id="runButton" onClick={handleRunInspection}>&#xf013; Run</button>
+                    <button className="headButtons" id="playButton" onClick={handlePlayPause}>{isPlaying ? "\uf04c Pause" : "\uf04b Play"}</button>
                 </div>
                 <br /><br /><br /><br /><hr /><br />
             </header>
@@ -929,44 +980,58 @@ function App() {
                 <div className="resize-bar" onMouseDown={() => setIsDragging("right")} />
                 <div className="mainBoxes" id="logBox" style={{ width: `${rightWidth}%` }}>
                     <table className="debug-table">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Function</th>
-                                <th>Line</th>
-                                <th>Message</th>
-                            </tr>
-                        </thead>
+                        {!hasWarningsOrErrors ? (
+                            <>
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ textAlign: "center", padding: "12px", color: "#50fa7b", fontSize: "36px" }}>&#xf00c;</td>
+                                        <td style={{ textAlign: "center", padding: "12px", color: "#50fa7b" }}>No warnings or errors found!</td>
+                                    </tr>
+                                </tbody>
+                            </>
+                        ) : (
+                            <>
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Function</th>
+                                        <th>Line</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {visibleDebugSteps
+                                        .filter(debugStep => debugStep.type !== "update_node")
+                                        .map((debugStep, index) => {
+                                            const isWarning = debugStep.type === "warning";
+                                            const isError = debugStep.type === "error";
 
-                        <tbody>
-                            {!hasWarningsOrErrors ? (
-                                <tr>
-                                    <td colSpan={4} style={{ textAlign: "center", padding: "12px", color: "#50fa7b"}}>
-                                        &#xf00c; No warnings or errors found!
-                                    </td>
-                                </tr>
-                            ) : (visibleDebugSteps
-                                .filter(debugStep => debugStep.type !== "update_node")
-                                .map((debugStep, index) => {
-                                    const isWarning = debugStep.type === "warning";
-                                    const isError = debugStep.type === "error";
+                                            const icon = isWarning ? "\uea6c" : isError ? "\uea87" : "\uea74";
 
-                                    const icon = isWarning ? "\uea6c" : isError ? "\uea87" : "\uea74";
+                                            return (
+                                                <tr key={index} className={`debug-${debugStep.type}`}
+                                                    onClick={() => { if (debugStep.timeline !== -1) { handleSliderChange(debugStep.timeline); } }}
+                                                    style={{ cursor: debugStep.timeline !== -1 ? "pointer" : "default" }}>
+                                                    <td>
+                                                        <span className={`icon-${debugStep.type}`}>{icon}</span>
+                                                    </td>
+                                                    <td>{debugStep.funcName}</td>
+                                                    <td>{debugStep.lineNum}</td>
+                                                    <td>{debugStep.message}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                </tbody>
+                            </>
+                        )}
 
-                                    return (
-                                        <tr key={index} className={`debug-${debugStep.type}`}
-                                            onClick={() => { if (debugStep.timeline !== -1) { handleSliderChange(debugStep.timeline); }}}
-                                            style={{ cursor: debugStep.timeline !== -1 ? "pointer" : "default" }}>
-                                            <td>
-                                                <span className={`icon-${debugStep.type}`}>{icon}</span>
-                                            </td>
-                                            <td>{debugStep.funcName}</td>
-                                            <td>{debugStep.lineNum}</td>
-                                            <td>{debugStep.message}</td>
-                                        </tr>
-                                    );
-                                }))}
-                        </tbody>
+
                     </table>
                 </div>
             </main>
