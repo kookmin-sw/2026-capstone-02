@@ -118,7 +118,7 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) Eval_expr(a
 		}
 
 		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
-			interpreter.output_handler.write_warning(abs_state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), get_varname_from_lvalue(expr_ty.Base), arr_val.Get_array().Len()))
+			interpreter.output_handler.write_warning(abs_state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index expr '%s' has value %s, but '%s.Len' has value %s.", expr_ty.Index, index_val.Get_int(), get_varname_from_lvalue(expr_ty.Base), arr_val.Get_array().Len()))
 		}
 		result_val := arr_val.Get_array().GetIndex(index_val.Get_int())
 		return result_val
@@ -291,7 +291,7 @@ func (interpreter *AbstractAnalyzer[IntDomainImpl, ArrayDomainImpl]) set_abstrac
 		}
 
 		if !check_array_index_bounds(index_val.Get_int(), arr_val.Get_array().Len()) {
-			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index has value %s, but %s.Len has value %s.", index_val.Get_int(), arr_varname, arr_val.Get_array().Len()))
+			interpreter.output_handler.write_warning(state.node_location, fmt.Sprintf("Potentially unsafe array indexing: index expr '%s' has value %s, but '%s.Len' has value %s.", lhs_node.Index, index_val.Get_int(), arr_varname, arr_val.Get_array().Len()))
 		}
 		state.abstract_mem[arr_varname] = AbstractValue[IntDomainImpl, ArrayDomainImpl]{domain_kind: ArrayDomainKind, array_domain: arr_val.Get_array().SetVal(index_val.Get_int(), rhs_val)}
 	case *imp.LenExpr:
