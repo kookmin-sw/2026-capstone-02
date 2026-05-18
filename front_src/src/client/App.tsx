@@ -78,14 +78,16 @@ class Debug_t {
     nodeState: string;
     message: string;
     lineNum: number;
+    stateIndex: number;
 
-    constructor(type: string, funcName: string, nodeID: number, nodeState: string, message: string, lineNum: number) {
+    constructor(type: string, funcName: string, nodeID: number, nodeState: string, message: string, lineNum: number, stateIndex: number) {
         this.type = type;
         this.funcName = funcName;
         this.nodeID = nodeID;
         this.nodeState = nodeState;
         this.message = message;
         this.lineNum = lineNum;
+        this.stateIndex = stateIndex;
     }
 };
 
@@ -185,9 +187,8 @@ function App() {
             return d.timeline <= currentStepIndex;
         });
     }, [debugWithTimeline, currentStepIndex]);
-
     // Check if warnings or errors is exist
-    const hasWarningsOrErrors = visibleDebugSteps.some(d => d.type === "warning" || d.type === "error");
+    const hasWarningsOrErrors = debugWithTimeline.length === 0 || debugWithTimeline.some(d => d.type === "warning" || d.type === "error");
 
     // Link button and handler for timeline playback
     const handlePlayPause = () => {
@@ -682,8 +683,9 @@ function App() {
                     const outNodeState: string = formatNodeState(output.Debugs[i].Node_state);
                     const outMessage: string = output.Debugs[i].Msg;
                     const outLineNum: number = output.Debugs[i].Line_number;
+                    const stateIndex: number = output.Debugs[i].State_index;
 
-                    outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage, outLineNum));
+                    outDebugs.push(new Debug_t(outType, outFuncName, outNodeID, outNodeState, outMessage, outLineNum, stateIndex));
                 }
             }
 
@@ -1047,14 +1049,35 @@ function App() {
                                 <span style={{ color: `#f1fa8c` }}>None</span>}
                         </div>
                         <br /><br /><br /><br />
-                        <input
+                        <div className="vertical-grid">
+                            <input
                             type="range"
                             min="0"
                             max={updateNodeSteps.length - 1}
                             value={currentStepIndex}
                             onChange={(e) => handleSliderChange(Number(e.target.value))}
                             className="step-slider"
-                        />
+                            />
+                            <div className="warning-lane">
+                                {debugWithTimeline
+                                    .filter(debugStep => debugStep.type === "warning" || debugStep.type === "error")
+                                    .map((debugStep, index) => {
+                                        const isWarning = debugStep.type === "warning";
+                                        const percent = ((debugStep.timeline) / (updateNodeSteps.length - 1)) * 100
+
+                                        return (
+                                            <button
+                                                key={debugStep.timeline}
+                                                className="warning-lane-marker"
+                                                style={{ left: `${percent}%`, color: `${isWarning ? "gold" : "red"}` }}
+                                                onClick={() => { if (debugStep.timeline !== -1) { handleSliderChange(debugStep.timeline); } }}
+                                            >
+                                                △
+                                            </button>
+                                        );
+                                    })}
+                            </div>
+                        </div>
                     </div>
                 )}
             </footer>
