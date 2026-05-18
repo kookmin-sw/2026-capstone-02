@@ -18,6 +18,8 @@ TraceInspector는 요약해석(abstract interpretation)이론을 바탕으로 Go
 
 알고리즘과 자료구조를 공부할 때 실제 알고리즘의 동작 원리를 단계적으로 그림을 그려보며 따라가면 이해가 더 잘 되듯이, TraceInspector 역시 정적 프로그램 분석 알고리즘에 대한 이해와 접근성을 초점으로 구성된 서비스입니다.
 
+[poster.pdf](https://raw.githubusercontent.com/kookmin-sw/2026-capstone-02/refs/heads/master/poster/poster.pdf)
+
 ## Usage
 
 Open을 눌러 분석하고자 하는 Go 소스 프로그램을 업로드 후, Run을 눌러 분석을 수행합니다. 좌측에는 입력 프로그램의 소스, 가운데는 프로그램의 계산 그래프 표현, 우측에는 분석 중 발생한 정보 및 경보와 오류가 표시됩니다.
