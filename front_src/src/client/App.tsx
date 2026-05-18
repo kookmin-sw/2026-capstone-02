@@ -185,9 +185,8 @@ function App() {
             return d.timeline <= currentStepIndex;
         });
     }, [debugWithTimeline, currentStepIndex]);
-
     // Check if warnings or errors is exist
-    const hasWarningsOrErrors = visibleDebugSteps.some(d => d.type === "warning" || d.type === "error");
+    const hasWarningsOrErrors = debugWithTimeline.length === 0 || debugWithTimeline.some(d => d.type === "warning" || d.type === "error");
 
     // Link button and handler for timeline playback
     const handlePlayPause = () => {
