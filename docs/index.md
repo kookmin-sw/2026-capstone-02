@@ -2,11 +2,10 @@
 
 추적 가능한 시각화 기반 코드 정적분석기
 
-캡스톤 프로젝트 2번째 팀<br>
-20212978 김신영<br>
-20212952 강민성<br>
+캡스톤 프로젝트 팀 2<br>
+20212978 김신영, 20212952 강민성<br>
 
-![alt text](./Inspector2.png)
+![inspector image](https://raw.githubusercontent.com/kookmin-sw/2026-capstone-02/refs/heads/master/docs/Inspector_clip.gif)
 
 ## Introduction
 
@@ -18,7 +17,7 @@ TraceInspector는 요약해석(abstract interpretation)이론을 바탕으로 Go
 
 알고리즘과 자료구조를 공부할 때 실제 알고리즘의 동작 원리를 단계적으로 그림을 그려보며 따라가면 이해가 더 잘 되듯이, TraceInspector 역시 정적 프로그램 분석 알고리즘에 대한 이해와 접근성을 초점으로 구성된 서비스입니다.
 
-[poster.pdf](https://raw.githubusercontent.com/kookmin-sw/2026-capstone-02/refs/heads/master/poster/poster.pdf)
+[포스터](https://raw.githubusercontent.com/kookmin-sw/2026-capstone-02/refs/heads/master/poster/poster.pdf)
 
 ## Usage
 

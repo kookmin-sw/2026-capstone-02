@@ -2,11 +2,10 @@
 
 추적 가능한 시각화 기반 코드 정적분석기
 
-캡스톤 프로젝트 2번째 팀<br>
-20212978 김신영<br>
-20212952 강민성<br>
+캡스톤 프로젝트 팀 2<br>
+20212978 김신영, 20212952 강민성<br>
 
-![alt text](./docs/Inspector2.png)
+![inspector gif](./docs/Inspector_clip.gif)
 
 ## Introduction
 
