@@ -29,7 +29,7 @@
         &
         \multirow{4}{3.5cm}[0.7em]{
             \begin{spacing}{1.4}
-                {\small \textbf{국민대학교 \\ 소프트웨어학부 \\ 다학제캡스톤디자인I}}
+                {\small \textbf{국민대학교 \\ 소프트웨어학부 \\ 다학제캡스톤디자인}\textsf{I}}
             \end{spacing}
         }
         &
@@ -51,7 +51,7 @@
 }
 
 \renewcommand{\footrulewidth}{1pt}
-\fancyfoot[C]{
+\newcommand{\FooterDef}{
     \footnotesize
     \begin{tabular*}{\headwidth}{@{\extracolsep{\fill}} l c r}
         캡스톤디자인 I
@@ -69,4 +69,15 @@
     Reproduction in whole or in part is prohibited
     without written consent.
     }
+}
+\fancyfoot[C]{\FooterDef}
+
+\fancypagestyle{titlepagefooter}{
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0pt}
+
+    \fancyfoot[C]{\FooterDef}
+
+    
+    \renewcommand{\footrulewidth}{1pt}
 }
