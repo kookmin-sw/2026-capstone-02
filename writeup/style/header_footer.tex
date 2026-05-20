@@ -18,7 +18,8 @@
 % 헤더 높이 증가 (중요)
 \setlength{\headheight}{85pt}
 
-\fancyhead[C]{
+
+\newcommand{\HeaderDef}{
 
     \renewcommand{\arraystretch}{1.3}
     \begin{tabularx}{\textwidth}{ |m{2.3cm} m{3.4cm}|m{3.8cm}|m{5.5cm}|m{3.5cm}| }
@@ -38,17 +39,19 @@
         } 
         \\
         \cline{3-5}
-        & & \centering \textbf{프로젝트 명} & \multicolumn{2}{c|}{\textbf{TraceInspector}}
+        & & \centering \textbf{프로젝트 명} & \multicolumn{2}{c|}{TraceInspector}
         \\
         \cline{3-5}
-        & & \centering \textbf{팀 명} & \multicolumn{2}{c|}{\textbf{TraceInspector}}
+        & & \centering \textbf{팀 명} & \multicolumn{2}{c|}{팀 2}
         \\
         \cline{3-5}
-        & & \centering {\footnotesize Confidential Restricted\hspace{-2mm}} & \centering Version 1.0 & \multicolumn{1}{c|}{\today}
+        & & \centering {\footnotesize Confidential Restricted\hspace{-2mm}} & \centering Version \ReportVersion & \multicolumn{1}{c|}{\today}
         \\
         \cline{1-5}
     \end{tabularx}
 }
+
+
 
 \renewcommand{\footrulewidth}{1pt}
 \newcommand{\FooterDef}{
@@ -70,6 +73,8 @@
     without written consent.
     }
 }
+
+\fancyhead[C]{\HeaderDef}
 \fancyfoot[C]{\FooterDef}
 
 \fancypagestyle{titlepagefooter}{
@@ -80,4 +85,10 @@
 
     
     \renewcommand{\footrulewidth}{1pt}
+}
+
+\fancypagestyle{plain}{%
+    \fancyhf{} % clear all header and footer fields
+    \fancyhead[C]{\HeaderDef}
+    \fancyfoot[C]{\FooterDef}
 }

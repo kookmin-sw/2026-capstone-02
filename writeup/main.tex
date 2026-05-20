@@ -1,19 +1,48 @@
 \documentclass[a4paper,12pt]{article}
-
 \usepackage[top=10mm,bottom=35mm,left=25mm,right=25mm, includeheadfoot]{geometry}
 \usepackage{kotex}
 \usepackage{lipsum}
 \usepackage{lmodern}
+\usepackage{tocloft}
+
+\newcommand{\ReportVersion}{1.0}
 
 \input{style/header_footer.tex}
 \begin{document}
 
 \input{style/title.tex}
 
+\renewcommand{\contentsname}{목 차}
+\renewcommand{\cfttoctitlefont}{\hfill\Large\bfseries}
+\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\cftdotsep}{1}
+
+\tableofcontents
+\clearpage
+
 \section{개요}
 
 테스트입니다.
+\subsection{프로젝트 개요}
+\subsection{추진 배경 및 필요성}
+\section{개발 내용 및 결과물}
+\subsection{목표}
 
+\subsection{연구/개발 내용 및 결과물}
+\subsubsection{연구/개발 내용}
+\subsubsection{시스템 기능 요구사항}
+\subsubsection{시스템 비기능(품질) 요구사항}
+\subsubsection{시스템 구조 및 설계도}
+\subsubsection{활용/개발된 기술}
+\subsubsection{현실적 제한 요소 및 그 해결 방안}
+\subsubsection{결과물 목록}
+\subsection{기대효과 및 활용방안}
+\section{자기평가}
+\section{참고 문헌}
+\section{부록}
+\subsection{사용자 메뉴얼}
+\subsection{운영자 메뉴얼}
+\subsection{배포 가이드}
 \lipsum[1-20]
 
 \end{document}
