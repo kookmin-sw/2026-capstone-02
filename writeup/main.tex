@@ -5,6 +5,7 @@
 \usepackage{lmodern}
 \usepackage{tocloft}
 \usepackage{indentfirst}
+\usepackage{tikz-cd}
 
 \newcommand{\ReportVersion}{1.0}
 
@@ -21,6 +22,8 @@
 
 \tableofcontents
 \clearpage
+
+\renewcommand{\figurename}{그림}
 
 \section{개요}
 
@@ -54,13 +57,18 @@
 \subsubsection{연구/개발 내용}
 \paragraph{\textsf{TraceInspector} 분석기}
 \subparagraph{배경: 프로그램 의미론}
+\begin{figure}[t]
+\centering
+\input{figures/trace.tex}
+\caption{Propagation of abstract states through the CFG.}
+\end{figure}
 \subparagraph{배경: 요약해석(abstract interpretation)}
 \subparagraph{\textsf{Imp} 중간 표현 언어}
 \subparagraph{요약 도메인}
 \subparagraph{제어 흐름 그래프(control-flow graph)}
 \subparagraph{요약실행 의미론}
 \subparagraph{SimpleProp: 논리적 명제 정규화 체계}
-\subparagraph{오류 탐지}
+\subparagraph{오류 상태 판별}
 
 \paragraph{\textsf{TraceInspector} 프론트엔드}
 \cite{lee2025}
