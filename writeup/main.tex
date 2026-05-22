@@ -10,6 +10,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
+\usepackage{setspace}
+
 
 \newcommand{\ReportVersion}{1.0}
 
@@ -31,6 +33,8 @@
 \renewcommand{\lstlistingname}{코드}
 
 \newtheorem*{utheorem}{정리}
+
+\onehalfspacing
 
 \section{개요}
 
@@ -79,7 +83,7 @@ Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
     \item 왜 "정적"일까?
 \end{itemize}
 
-어쩌면 코딩과 오류에 너무 익숙해진 나머지 이러한 질문들에 대한 답이 자연스럽고 크게 궁금하게 느껴지지 않을 수도 있다고 생각된다. 
+이러한 질문들은 개발자에게 익숙한 일상적 경험으로 인해 간과되기 쉽다. 
 하지만 단순히 코드를 입력으로 넣었을 때 오류 정보를 알려주는 "마법의 상자"로 생각하지 않고, 그 내부의 추론 과정과 분석 원리를 이해할 수 있다면,
 분석 결과를 보다 효과적으로 해석하고 활용할 수 있을 것이다.
 
@@ -88,7 +92,7 @@ Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
 프로그래머들에게 정적 분석 이론에 대한 이해와 친숙도를 높이고, 단순히 코드를 작성하는 행위를 넘어 논증의 대상으로 바라보는 관점을 소개하고자 한다.
 
 알고리즘 혹은 자료구조 강의를 생각해보자. 이를테면 그래프 탐색 알고리즘을 처음 접했을 때, 알고리즘의 수학적 내용과 의사 코드만 보아서는 온전히 해당 개념을 직관적으로 이해하기 어렵다.
-필자의 경우 그보단 실제 그래프 그림 위에서 동작하는 예시를 봤을 때 비로소 올바르게 이해가 될 것이다. 특히나 알고리즘과 같이 추상화의 정도가 높은 주제의 경우 더더욱 
+대신 실제 그래프 위에서 동작하는 예시를 통해 비로소 직관적인 이해가 가능해지는 경우가 많다. 특히나 알고리즘과 같이 추상화의 정도가 높은 주제의 경우 더더욱 
 그럴 것이다. 마찬가지로 \textsf{TraceInspector} 역시 정적 분석 알고리즘을 시각화하여 동작 원리에 대해 와닿을 수 있는 설명을 제시하는 것이 목표이다.
 % Static analysis overview
 % Why static analyzers are opaque
@@ -126,9 +130,9 @@ IDE와의 통합 등도 가능하다.
 정적 분석은 "프로그램의 실제 실행 동작을 코드 분석을 통해 추론하는 과정"이다. 그렇다면 실제 실행 동작이 무엇인지, 코드 분석은 어떻게 할 것인지, 그리고 무엇을
 추론할지에 대해서도 정의해야 한다. 각 요소들이 어떻게 정의되는지 보다 엄밀한 소개를 하고자 한다.
 
-\subparagraph{배경: 프로그램 분석과 결정가능성(decidability)}
+\subparagraph{배경: 정적 프로그램 분석과 결정가능성(decidability)}
 
-상술했듯이 정적 프로그램 분석은 실행하지 않고 동작 특성을 추론하는\cite{moller2012} 기법이다. 동작 특성의 경우 다음과 같은 예시들이 존재한다:
+상술했듯이 정적 프로그램 분석은 실행하지 않고 동작 특성을 추론하는 기법이다. 동작 특성의 경우 다음과 같은 예시들이 존재한다:
 
 \begin{itemize}
     \item 0으로의 나눗셈을 수행하게끔 하는 입력이 존재하는가?
@@ -141,12 +145,12 @@ IDE와의 통합 등도 가능하다.
 이처럼 실행했을 때의 행동과 관련되어 있고, 참 또는 거짓으로 판별되는 명제들을 의미론적 성질(semantic property)로 칭하게 된다. "의미론적" 성질인 이유는 
 단순히 프로그램의 겉모양인 구문(syntax)만 분석해서 판별할 수 없기 때문이다. 
 
-코드 \ref{collatz}은 콜라츠 수열(collatz sequence)의 $n$번항을 계산하는 함수이다. 콜라츠 수열은 다음과 같은 정의를 가진다:
+코드 \ref{collatz}은 콜라츠 수열(Collatz sequence)의 $n$번항을 계산하는 함수이다. 콜라츠 수열은 다음과 같은 정의를 가진다:
 $$
 C(n) =
 \begin{cases}
-    \frac{n}{2} & n \text{ 은 짝수} \\
-    3n + 1 & n \text{ 은 홀수}
+    \frac{n}{2} & n \text{ 은 짝수인 경우} \\
+    3n + 1 & n \text{ 은 홀수인 경우}
 \end{cases}
 $$
 
@@ -158,39 +162,73 @@ def collatz(n):
     if n == 1:
         return 1
     if n % 2 == 0:
-        collatz(n / 2)
+        return collatz(n / 2)
     else:
-        collatz(3 * n + 1)
+        return collatz(3 * n + 1)
     \end{lstlisting}
   \end{minipage}
 \end{figure}
 
 모든 양수 $n$에 대해서 위 함수가 종료할까? 1937년도에 수학자 콜라츠는 "그렇다"고 추측했지만, 아직까지도 그가 맞았다는 증명이 존재하지 않는다.
-이에 따라 실제로 해당 함수에 어떤 값을 넣고 직접 실행해보지 않는 이상 종료할지 말지는 알 수 없게 된다.
+이에 따라 특정 입력값에 대해서는 실행을 통해 확인할 수 있지만, 모든 양수 입력에 대해 종료함을 보장하는 일반적인 방법은 현재까지 알려져 있지 않다.
 
-마찬가지로 튜링의 유명한 정지 문제(halting problem)가 있다: 튜링의 정지 문제는 "임의의 프로그램이 주어졌을 때, 해당 프로그램이 유한한 시간 내에 정지할지 정확히 판별하는
+마찬가지로 튜링의 유명한 정지 문제(halting problem)\cite{turing1936}가 있다: 튜링의 정지 문제는 "임의의 프로그램이 주어졌을 때, 해당 프로그램이 유한한 시간 내에 정지할지 정확히 판별하는
 프로그램은 존재할 수 없다"는 정리이다.
 
-콜라츠 추측과 정지 문제와 같이 우리는 답을 정확히 알 수 없는 의미론적 성질이 존재함을 알게 되었다. 그렇다면 구체적으로 우리가 답을 구할 수 있는 의미론적 성질들은 존재할까? 놀랍게도
+콜라츠 추측과 정지 문제와 같이 우리는 답을 정확히 알 수 없는 의미론적 성질이 존재함을 알게 되었다. 그렇다면 비자명한 의미론적 성질 중 자동으로 완벽하게 판별 가능한 것이 단 하나라도 존재할까? 놀랍게도
 Rice 정리에 의하면 \textbf{존재하지 않는다}:
 
-\begin{utheorem}[Rice, 1953]
-	$L$ 이 튜링 완성 언어이고, $P$가 $L$의 프로그램들에 대한 non-trivial\footnote{모든 프로그램에 대해 참이거나 거짓이 아닌 성질}, 의미론적 성질일 때, $L$의 모든 프로그램 $p$에 대해 \\ \\
-	\indent  $p$에 대해 참을 반환함 $\iff$ $p$는 $P$를 만족함. \\ \\
-	을 만족하는 판별 알고리즘은 존재하지 않는다.
+\begin{utheorem}[Rice\cite{rice1953}, 1953]
+	$L$ 이 튜링 완성 언어이고, $P$가 $L$의 프로그램들에 대한 비자명한\footnote{non-trivial: 일부 프로그램에 대해서는 참이고, 일부 프로그램에 대해서는 거짓인 성질} 의미론적 성질일 때, $L$의 모든 프로그램 $p$에 대해
+$$
+    A(p)=
+\begin{cases}
+\text{참} & p \text{ 가 } P \text{ 를 만족하는 경우} \\
+\text{거짓} &p \text{ 가 }  P \text{ 를 만족하지 않는 경우}
+\end{cases}
+$$
+를 만족하는 판별 알고리즘 $A$는 존재하지 않는다.
 \end{utheorem}
 
-이를 풀어 말하자면 어떤 튜링 완성 언어로 작성된 모든 프로그램 $p$에 대해 실제로 $p$를 실행했을 때 $P$ 를
-만족한다는 것을 완벽하게 분석이 가능한 알고리즘은 존재할 수 없다는 의미이다. 여기서$P$를 ”프로그램이 언젠가는 종료한다” 로 한정하면 정지 문제가 된다.
+이를 풀어 말하자면 어떤 튜링 완성 언어로 작성된 임의의 프로그램 $p$가 성질 $P$ 를 만족하는지 완벽하게 판별 가능한 알고리즘은 존재할 수 없다는 의미이다. 
+여기서 $P$를 ”프로그램이 언젠가는 종료한다” 로 한정하면 정지 문제가 된다.
 
-이에 따라 ”모든 프로그램에 대해 동작”, ”사용자의 개입 없는 알고리즘”, ”완벽한 정확성($\iff$)” 중 최소한 하나의 조건은 무조건 포기해야 분석기 구현이 가능해진다.
+논리학과 계산과학에서는 이처럼 어떤 명제에 대해 참 또는 거짓을 판별할 수 있는 알고리즘의 존재 여부를 결정가능성(decidability)\cite{moller2012} 이라고 칭한다.
+이러한 관점에서 정적 프로그램 분석은 의미론적 성질을 판병하는 문제이기에 결정 불가능(undecidable)하며, 이에 따라 "모든 프로그램"에 대해 "자동으로", "완벽한" 정확성을 가지는 정적 분석기는 구현이 불가능하다.
+
+결국 ”모든 프로그램에 대해 동작”, ”사용자의 개입 없는 알고리즘”, ”완벽한 정확성(분석 결과가 실제 오류 존재 여부와 동치)” 중 최소한 하나의 조건은 포기해야 분석기 구현이 가능해진다.
 
 \subparagraph{배경: 프로그램 의미론}
+
+프로그램이 실행되었을 때 동작하는 과정을 어떻게 표현할까? 단순하게 생각하면 메모리의 특정한 위치에 특정한 값을 계산한 후 저장한다고 정의할 수 있다. 형식 프로그램 의미론(formal program semantics)은
+이러한 프로그램의 동작 과정에 대한 엄밀한 수학적 모형을 제시한다. 본 문서에서는 형식 의미론 중 operational semantics에 대해 소개하고자 한다. 
+\textsf{TraceInspector}의 요약해석 구현이 operational semantics 위에서 정의되었기 때문이다.
+
+Operational semantics는 프로그램 실행 과정을 프로그램 상태간의 전이로 나타내는 기법이다. 그림 \ref{fig:trace}는 어떤 시작 메모리 상태 $S$로부터 프로그램이 실행을 시작해서
+$a_1, a_2, \ldots, a_n$ 중 하나의 상태로 전이되고, 이후에 후속 상태들로 계속해서 전이하는 구조로 나타낸 예시이다. 마치 오토마타에서 시작 상태에서부터 
+주어진 규칙과 입력에 의해 다음 상태로 전이되는 것과 같이, 프로그램 의미론 역시 주어진 상태와 입력에서 언어의 문법적 요소별로 정해진 규칙에 따라 다음 상태로 전이되는 체계로 
+나타낸 형식이다. 
+
+요약해석 맥락에서는 이처럼 실제 프로그램 실행을 묘사하는 의미론을 "구체적 의미론(concrete semantics)"이라 칭한다. 
+\textsf{TraceInspector}에서 정의한 구체적 의미론 전체는 \ref{formal_semantics}에 수록하였다.
+
+이러한 operational semantics 위에서 주어진 입력과 초기 상태에 대해 실행 시 거치는 상태들의 연속을 실행 흔적(trace)라 칭한다.
+$S \hookrightarrow a_1 \hookrightarrow b_1 \hookrightarrow c_1$ 흔적을 예시로 살펴보면, 시작 상태 $S$로부터 $a_1, b_1$을 거쳐 최종 상태 $c_1$에서 종료된 하나의 실행 흔적이다.
+
 \begin{figure}[h]
-\centering
-\input{figures/trace.tex}
-\caption{Propagation of abstract states through the CFG.}
+    \centering
+    \input{figures/trace.tex}
+    \caption{프로그램 상태 간 전이를 통해 의미를 나타내는 operational semantics}
+    \label{fig:trace}
 \end{figure}
+
+\begin{figure}[h]
+    \centering
+    \input{figures/trace_error.tex}
+    \caption{오류 상태 및 흔적}
+    \label{fig:trace}
+\end{figure}
+
 \subparagraph{배경: 요약해석(abstract interpretation)}
 \subparagraph{\textsf{Imp} 중간 표현 언어}
 \subparagraph{요약 도메인}
@@ -225,7 +263,7 @@ Rice 정리에 의하면 \textbf{존재하지 않는다}:
 \subsection{사용자 메뉴얼}
 \subsection{운영자 메뉴얼}
 \subsection{배포 가이드}
-\subsection{\textsf{Imp} 형식 의미론}
+\subsection{\textsf{Imp} 형식 의미론} \label{formal_semantics}
 \subsection{요약도메인 명세}
 \subsection{TraceInspector의 건전성}
 \lipsum[1-20]

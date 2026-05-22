@@ -27,40 +27,40 @@
 \node (s) at (0,0) {$S$};
 
 % Layer 1
-\node (a1) at (2,3) {$a_1$};
-\node (a2) at (2,1.5) {$a_2$};
-\node (a3) at (2,0) {$a_3$};
-\node (a4) at (2,-1.5) {$a_4$};
-\node (a5) at (2,-3) {$a_5$};
+\node (a1) at (2,3) {};
+\node (a2) at (2,1.5) {};
+\node (a3) at (2,0) {};
+\node (a4) at (2,-1.5) {};
+\node (a5) at (2,-3) {};
 
 % Layer 2
-\node (b1) at (4,4) {$b_1$};
+\node (b1) at (4,4) {};
 \node (b2) at (4,2) {};
 \node (b3) at (4,0) {};
 \node (b4) at (4,-2) {};
 \node (b5) at (4,-4) {};
 
 % Layer 3
-\node (c1) at (6,4) {$c_1$};
+\node (c1) at (6,4) {};
 \node (c2) at (6,2) {};
 \node (c3) at (6,0) {};
 \node (c4) at (6,-2) {};
 \node (c5) at (6,-4) {};
 
 % Layer 4
-\node (d1) at (8,2) {};
-\node (d2) at (8,0) {};
-\node (d3) at (8,-2) {};
+\node[active] (d1) at (8,2) {$e_1$};
+\node[active] (d2) at (8,0) {$e_2$};
+\node[active] (d3) at (8,-2) {$e_3$};
 \node (d4) at (8,-4) {};
 
 % Layer 5
-\node (e1) at (10,1) {};
-\node (e2) at (10,-1) {};
+\node[active] (e1) at (10,1) {$e_4$};
+\node[active] (e2) at (10,-1) {$e_5$};
 \node (e3) at (10,-3) {};
 
 % Layer 6
-\node (f1) at (12,2) {};
-\node (f2) at (12,0) {};
+\node[active] (f1) at (12,2) {$e_6$};
+\node[active] (f2) at (12,0) {$e_7$};
 \node (f3) at (12,-2) {};
 \node (f4) at (12,-4) {};
 
@@ -100,25 +100,25 @@
 \draw[edge] (e3) -- (f4);
 
 % Highlighted propagation paths
-% \draw[pathline]
-% (s.center) --
-% (a2.center) --
-% (b2.center) --
-% (c2.center) --
-% (d1.center);
+\draw[pathline]
+(s) --
+(a2.center) --
+(b2.center) --
+(c2.center) --
+(d1);
 
-% \draw[pathline]
-% (s.center) --
-% (a2.center) --
-% (b2.center) --
-% (c2.center) --
-% (d2.center);
+\draw[pathline]
+(s) --
+(a2.center) --
+(b2.center) --
+(c2.center) --
+(d2);
 
-% \draw[pathline]
-% (s.center) --
-% (a3.center) --
-% (b3.center) --
-% (c3.center) --
-% (d3.center);
+\draw[pathline]
+(s) --
+(a3.center) --
+(b3.center) --
+(c3.center) --
+(d3);
 
 \end{tikzpicture}
