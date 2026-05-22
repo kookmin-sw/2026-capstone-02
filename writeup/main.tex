@@ -6,6 +6,10 @@
 \usepackage{tocloft}
 \usepackage{indentfirst}
 \usepackage{tikz-cd}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
 
 \newcommand{\ReportVersion}{1.0}
 
@@ -18,12 +22,15 @@
 \renewcommand{\cftaftertoctitle}{\hfill}
 \renewcommand{\cftdotsep}{1}
 \setcounter{secnumdepth}{4}
-\setcounter{tocdepth}{4}
+\setcounter{tocdepth}{5}
 
 \tableofcontents
 \clearpage
 
 \renewcommand{\figurename}{그림}
+\renewcommand{\lstlistingname}{코드}
+
+\newtheorem*{utheorem}{정리}
 
 \section{개요}
 
@@ -36,8 +43,53 @@
 % Educational/interpretability focus
 \subsection{추진 배경 및 필요성}
 
-프로그램을 작성한 이후, 프로그래머는 작성한 프로그램이 어떠한 명세를 만족하는지 확인하고자 한다. 프로그램에 대한 명세라 함은 ”특정 오류가 발생하지 않는다”, 
-”계산기가 사칙연산을 올바르게 수행한다”, ”사용자 리퀘스트를 언젠가는 올바르게 처리한다” 등 참 또는 거짓으로 판별할 수 있는 논리적 명제이다.
+올바르고 안전한 코드를 작성하는 것은 모든 프로그래머의 목표이다. 그러나 현대의 프로그래밍 환경은 고도의 추상화와 복잡한 소프트웨어 구성 요소들로 이루어져 있어, 
+처음부터 완전히 안전한 코드를 작성하는 것은 사실상 불가능에 가깝다. 대신 개발자는 코드를 작성하고, 오류를 탐지하며, 디버깅을 통해 문제를 수정하는 과정을 
+반복함으로써 점진적으로 프로그램의 안전성과 신뢰성을 향상시킨다.
+
+이 과정에서 오류를 효과적으로 탐지하는 것은 매우 중요하다. 오류가 탐지되어야만 디버깅 과정이 시작될 수 있으며, 프로그램에 존재하는 문제의 원인과 위치를
+ 파악할 수 있기 때문이다. 따라서 소프트웨어 개발 과정에서는 단위 테스트(unit testing), 통합 테스트(integration testing), 코드 리뷰(code review), 
+ 정적 분석(static analysis) 등 다양한 오류 탐지 기법들이 적극적으로 활용된다.
+
+정적 프로그램 분석(static program analysis)이란 프로그램을 직접 실행하지 않고 소스 코드를 분석하여 실제 동작 특성을 추론하는 기법들을 의미힌다.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/fbinfer.png}
+    \caption{Infer 분석기를 이용해 Java 코드의 \textsf{NullPointerException을} 탐지하는 모습}
+\end{figure}
+
+IDE에서 코드를 저장할 때마다 표시되는 unused variable 등의 경보, 컴파일러에서 보다 효율적인 코드 생성을 위해 수행하는 dataflow analysis, CI/CD
+절차에서 커밋 후 수행되는 code linter 등 개발의 전 과정에서 프로그래머가 알게 모르게 활용되고 있다.
+
+Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
+등 실제 프로그래머가 활용하여 오류를 탐지하고자 하는 목적으로 작성된 정적 분석기와, LLVM\cite{lattner2004} 등의 컴파일러 내부에서 중간 절차로 활용되는
+경우와 같이 사용 환경과 분석 목표는 서로 다르지만, 공통적으로 다음과 같은 목표를 가진다:
+
+\begin{itemize}
+    \item 정확성: 의미 있는 오류 정보를 정확하게 제공해야 한다.
+    \item 신속성: 분석 과정이 신속해야 하며, 지나치게 많은 시공간 자원을 소모해서는 안된다.
+    \item 편리성 및 자동화: 최소한의 사용자 개입 및 추가적인 정보 없이 독자적으로 동작해야 한다.
+\end{itemize}
+즉 대량의 코드에 대해 빠르고 정확하게 분석하는 것을 목표로 한다. 
+
+하지만 우리가 정적 분석기를 활용하면서, 한번쯤은 다음과 같은 질문들을 해볼 수 있다:
+\begin{itemize}
+    \item 정적 분석기는 어떤 과정을 통해 코드 속의 오류를 탐지할 수 있을까?
+    \item 이러한 정적 분석기의 결과를 우리가 신뢰할 수 있을까?
+    \item 왜 "정적"일까?
+\end{itemize}
+
+어쩌면 코딩과 오류에 너무 익숙해진 나머지 이러한 질문들에 대한 답이 자연스럽고 크게 궁금하게 느껴지지 않을 수도 있다고 생각된다. 
+하지만 단순히 코드를 입력으로 넣었을 때 오류 정보를 알려주는 "마법의 상자"로 생각하지 않고, 그 내부의 추론 과정과 분석 원리를 이해할 수 있다면,
+분석 결과를 보다 효과적으로 해석하고 활용할 수 있을 것이다.
+
+\textsf{TraceInspector}는 위와 같은 궁금증을 해소하고자 하는 취지에서 개발되었다. 정적 프로그램 분석 기법 중 요약해석(abstract interpretation)
+이론에 대해 소개하고, 단순히 어떤 오류가 존재하는지에 대한 정보를 제공하는 것을 넘어 "어떻게" 해당 이론을 통해 탐지되었는지 시각화하여 보여주고자 한다. 이를 통해 
+프로그래머들에게 정적 분석 이론에 대한 이해와 친숙도를 높이고, 단순히 코드를 작성하는 행위를 넘어 논증의 대상으로 바라보는 관점을 소개하고자 한다.
+
+알고리즘 혹은 자료구조 강의를 생각해보자. 이를테면 그래프 탐색 알고리즘을 처음 접했을 때, 알고리즘의 수학적 내용과 의사 코드만 보아서는 온전히 해당 개념을 직관적으로 이해하기 어렵다.
+필자의 경우 그보단 실제 그래프 그림 위에서 동작하는 예시를 봤을 때 비로소 올바르게 이해가 될 것이다. 특히나 알고리즘과 같이 추상화의 정도가 높은 주제의 경우 더더욱 
+그럴 것이다. 마찬가지로 \textsf{TraceInspector} 역시 정적 분석 알고리즘을 시각화하여 동작 원리에 대해 와닿을 수 있는 설명을 제시하는 것이 목표이다.
 % Static analysis overview
 % Why static analyzers are opaque
 % Why visualization matters
@@ -55,9 +107,86 @@
 
 \subsection{연구/개발 내용 및 결과물}
 \subsubsection{연구/개발 내용}
+\textsf{TraceInspector}는 요약해석 이론을 구현하여 소스 코드를 분석하는 "분석기"와 분석과 관련된 정보를 시각화하여 나타내는 "인터페이스"로 구성되어 있다.
+
+다음은 각 요소별 설명이다.
+
 \paragraph{\textsf{TraceInspector} 분석기}
+
+\textsf{TraceInspector} 분석기는 Go 언어 소스 코드를 입력으로 받아, 다음의 정보를 출력하는 단일 실행 파일(executable)이다:
+\begin{itemize}
+    \item 제어 흐름 그래프(control-flow graph): 입력 소스 코드에 대응되는 제어 흐름 그래프
+    \item 오류 정보: 입력 소스에서 발생할 수 있는 오류의 유형과 코드상 위치
+    \item 분석 단계별 상태: 분석을 수행하며 단계적으로 계산된 중간 계산 결과
+\end{itemize}
+
+명령줄 인자를 통해 .go 파일을 입력받으며, 위의 정보는 모두 표준화된 JSON 형식으로 출력된다. 이에 따라 향후 \textsf{TraceInspector} 인터페이스 뿐만 아니라 
+IDE와의 통합 등도 가능하다.
+
+정적 분석은 "프로그램의 실제 실행 동작을 코드 분석을 통해 추론하는 과정"이다. 그렇다면 실제 실행 동작이 무엇인지, 코드 분석은 어떻게 할 것인지, 그리고 무엇을
+추론할지에 대해서도 정의해야 한다. 각 요소들이 어떻게 정의되는지 보다 엄밀한 소개를 하고자 한다.
+
+\subparagraph{배경: 프로그램 분석과 결정가능성(decidability)}
+
+상술했듯이 정적 프로그램 분석은 실행하지 않고 동작 특성을 추론하는\cite{moller2012} 기법이다. 동작 특성의 경우 다음과 같은 예시들이 존재한다:
+
+\begin{itemize}
+    \item 0으로의 나눗셈을 수행하게끔 하는 입력이 존재하는가?
+    \item 배열 인덱싱은 항상 올바른 범위 내에서 수행되는가?
+    \item null 포인터를 참조하지 않는가?
+    \item 로그인하지 않은 상태에서 사용자 정보에 접근할 수 있는가?
+    \item 모든 입력에 대해 프로그램이 유한한 시간 내에 종료하는가?
+\end{itemize}
+
+이처럼 실행했을 때의 행동과 관련되어 있고, 참 또는 거짓으로 판별되는 명제들을 의미론적 성질(semantic property)로 칭하게 된다. "의미론적" 성질인 이유는 
+단순히 프로그램의 겉모양인 구문(syntax)만 분석해서 판별할 수 없기 때문이다. 
+
+코드 \ref{collatz}은 콜라츠 수열(collatz sequence)의 $n$번항을 계산하는 함수이다. 콜라츠 수열은 다음과 같은 정의를 가진다:
+$$
+C(n) =
+\begin{cases}
+    \frac{n}{2} & n \text{ 은 짝수} \\
+    3n + 1 & n \text{ 은 홀수}
+\end{cases}
+$$
+
+\begin{figure}[h]
+  \centering % Centers the content horizontally
+  \begin{minipage}{0.6\textwidth} % Limits width so centering is visible
+    \begin{lstlisting}[language=python, caption={Collatz 수열을 계산하는 코드}, label={collatz}, captionpos=b]
+def collatz(n):
+    if n == 1:
+        return 1
+    if n % 2 == 0:
+        collatz(n / 2)
+    else:
+        collatz(3 * n + 1)
+    \end{lstlisting}
+  \end{minipage}
+\end{figure}
+
+모든 양수 $n$에 대해서 위 함수가 종료할까? 1937년도에 수학자 콜라츠는 "그렇다"고 추측했지만, 아직까지도 그가 맞았다는 증명이 존재하지 않는다.
+이에 따라 실제로 해당 함수에 어떤 값을 넣고 직접 실행해보지 않는 이상 종료할지 말지는 알 수 없게 된다.
+
+마찬가지로 튜링의 유명한 정지 문제(halting problem)가 있다: 튜링의 정지 문제는 "임의의 프로그램이 주어졌을 때, 해당 프로그램이 유한한 시간 내에 정지할지 정확히 판별하는
+프로그램은 존재할 수 없다"는 정리이다.
+
+콜라츠 추측과 정지 문제와 같이 우리는 답을 정확히 알 수 없는 의미론적 성질이 존재함을 알게 되었다. 그렇다면 구체적으로 우리가 답을 구할 수 있는 의미론적 성질들은 존재할까? 놀랍게도
+Rice 정리에 의하면 \textbf{존재하지 않는다}:
+
+\begin{utheorem}[Rice, 1953]
+	$L$ 이 튜링 완성 언어이고, $P$가 $L$의 프로그램들에 대한 non-trivial\footnote{모든 프로그램에 대해 참이거나 거짓이 아닌 성질}, 의미론적 성질일 때, $L$의 모든 프로그램 $p$에 대해 \\ \\
+	\indent  $p$에 대해 참을 반환함 $\iff$ $p$는 $P$를 만족함. \\ \\
+	을 만족하는 판별 알고리즘은 존재하지 않는다.
+\end{utheorem}
+
+이를 풀어 말하자면 어떤 튜링 완성 언어로 작성된 모든 프로그램 $p$에 대해 실제로 $p$를 실행했을 때 $P$ 를
+만족한다는 것을 완벽하게 분석이 가능한 알고리즘은 존재할 수 없다는 의미이다. 여기서$P$를 ”프로그램이 언젠가는 종료한다” 로 한정하면 정지 문제가 된다.
+
+이에 따라 ”모든 프로그램에 대해 동작”, ”사용자의 개입 없는 알고리즘”, ”완벽한 정확성($\iff$)” 중 최소한 하나의 조건은 무조건 포기해야 분석기 구현이 가능해진다.
+
 \subparagraph{배경: 프로그램 의미론}
-\begin{figure}[t]
+\begin{figure}[h]
 \centering
 \input{figures/trace.tex}
 \caption{Propagation of abstract states through the CFG.}
