@@ -11,7 +11,12 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{setspace}
+\usepackage{subcaption}
 
+
+\usetikzlibrary{fit}
+\usetikzlibrary{arrows.meta,positioning}
+\usetikzlibrary{shapes.geometric}
 
 \newcommand{\ReportVersion}{1.0}
 
@@ -33,6 +38,7 @@
 \renewcommand{\lstlistingname}{코드}
 
 \newtheorem*{utheorem}{정리}
+\newtheorem*{udefinition}{정의}
 
 \onehalfspacing
 
@@ -101,7 +107,7 @@ Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
 % “understanding the reasoning process”
 \section{개발 내용 및 결과물}
 \subsection{목표}
-
+\cite{lee2025}
 % project goals
 % what you intended to demonstrate
 % interpretability
@@ -115,7 +121,7 @@ Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
 
 다음은 각 요소별 설명이다.
 
-\paragraph{\textsf{TraceInspector} 분석기}
+\paragraph{\textsf{TraceInspector} 분석기} ~\\
 
 \textsf{TraceInspector} 분석기는 Go 언어 소스 코드를 입력으로 받아, 다음의 정보를 출력하는 단일 실행 파일(executable)이다:
 \begin{itemize}
@@ -130,7 +136,7 @@ IDE와의 통합 등도 가능하다.
 정적 분석은 "프로그램의 실제 실행 동작을 코드 분석을 통해 추론하는 과정"이다. 그렇다면 실제 실행 동작이 무엇인지, 코드 분석은 어떻게 할 것인지, 그리고 무엇을
 추론할지에 대해서도 정의해야 한다. 각 요소들이 어떻게 정의되는지 보다 엄밀한 소개를 하고자 한다.
 
-\subparagraph{배경: 정적 프로그램 분석과 결정가능성(decidability)}
+\subparagraph{배경: 정적 프로그램 분석과 결정가능성(decidability)} ~\\
 
 상술했듯이 정적 프로그램 분석은 실행하지 않고 동작 특성을 추론하는 기법이다. 동작 특성의 경우 다음과 같은 예시들이 존재한다:
 
@@ -198,7 +204,7 @@ $$
 
 결국 ”모든 프로그램에 대해 동작”, ”사용자의 개입 없는 알고리즘”, ”완벽한 정확성(분석 결과가 실제 오류 존재 여부와 동치)” 중 최소한 하나의 조건은 포기해야 분석기 구현이 가능해진다.
 
-\subparagraph{배경: 프로그램 의미론}
+\subparagraph{배경: 프로그램 의미론} ~\\
 
 프로그램이 실행되었을 때 동작하는 과정을 어떻게 표현할까? 단순하게 생각하면 메모리의 특정한 위치에 특정한 값을 계산한 후 저장한다고 정의할 수 있다. 형식 프로그램 의미론(formal program semantics)은
 이러한 프로그램의 동작 과정에 대한 엄밀한 수학적 모형을 제시한다. 본 문서에서는 형식 의미론 중 operational semantics에 대해 소개하고자 한다. 
@@ -212,7 +218,7 @@ $a_1, a_2, \ldots, a_n$ 중 하나의 상태로 전이되고, 이후에 후속 �
 요약해석 맥락에서는 이처럼 실제 프로그램 실행을 묘사하는 의미론을 "구체적 의미론(concrete semantics)"이라 칭한다. 
 \textsf{TraceInspector}에서 정의한 구체적 의미론 전체는 \ref{formal_semantics}에 수록하였다.
 
-이러한 operational semantics 위에서 주어진 입력과 초기 상태에 대해 실행 시 거치는 상태들의 연속을 실행 흔적(trace)라 칭한다.
+이러한 구체적 의미론 위에서 주어진 입력과 초기 상태에 대해 실행 시 거치는 상태들의 연속을 실행 흔적(trace)라 칭한다.
 $S \hookrightarrow a_1 \hookrightarrow b_1 \hookrightarrow c_1$ 흔적을 예시로 살펴보면, 시작 상태 $S$로부터 $a_1, b_1$을 거쳐 최종 상태 $c_1$에서 종료된 하나의 실행 흔적이다.
 
 \begin{figure}[h]
@@ -222,23 +228,166 @@ $S \hookrightarrow a_1 \hookrightarrow b_1 \hookrightarrow c_1$ 흔적을 예시
     \label{fig:trace}
 \end{figure}
 
+오류 상태란 어떤 명제 $P$를 만족하는(혹은 만족하지 않는) 상태들의 집합이라 볼 수 있다. 그림 \ref{fig:trace_error}에선 오류 상태들을 $e_1, \cdots ,e_7$ 로 정의하였다.
+이에 따라 프로그램의 초기 상태로부터 시작하여 $e_n$에 도달 가능한 경로 $S \hookrightarrow a_n \hookrightarrow \ldots \hookrightarrow e_n$ 가 존재하는 경우 오류가 발생할 수 있는 프로그램으로 정의할 수 있다.
+
 \begin{figure}[h]
     \centering
     \input{figures/trace_error.tex}
     \caption{오류 상태 및 흔적}
-    \label{fig:trace}
+    \label{fig:trace_error}
 \end{figure}
 
-\subparagraph{배경: 요약해석(abstract interpretation)}
-\subparagraph{\textsf{Imp} 중간 표현 언어}
-\subparagraph{요약 도메인}
-\subparagraph{제어 흐름 그래프(control-flow graph)}
-\subparagraph{요약실행 의미론}
-\subparagraph{SimpleProp: 논리적 명제 정규화 체계}
-\subparagraph{오류 상태 판별}
+\subparagraph{배경: 요약해석(abstract interpretation)} ~\\
 
-\paragraph{\textsf{TraceInspector} 프론트엔드}
-\cite{lee2025}
+이제 프로그램이란 메모리 상태간의 전이이고, 전이 방법은 해당 프로그래밍 언어의 형식 의미론에 의해 정해지며, 오류란 특정한 조건을 만족하는 메모리 상태이며, 
+시작 상태로부터 도달 가능한 오류 상태가 존재하는 경우 오류가 존재하는 프로그램이라는 것을 정의하였다.
+
+요약해석 이론은 논리적으로 건전한(sound) 분석을 목표로 한다. 신뢰할 수 있는 분석기를 만든다는 것은 다양한 해석이 가능하겠지만 그중 "오류가 없다고 분석된다면 실제로 실행 가능한 모든 경로에 대 오류 흔적은 존재하지 않는다" 고 정의할 수 있으며,
+이 문장이 논리적 건정성을 한 문장으로 표현한 것이다.
+
+입력 프로그램 $p$에 대해, $analysis(p)$는 $p$에 대한 분석을 수행하며, 그 결과로 "오류가 존재한다"와 "오류가 존재하지 않는다"를 반환한다.
+$error(p)$는 $p$를 실행했을 때 오류가 발생 가능한지 판별하는 오라클(oracle) 함수이다. 여기서 오라클이랑 실제로 구현 불가능하지만 완벽하게 사실을 판별할 수 있는 가상의 함수이다.
+$analysis(p)$ 가 논리적으로 건전하기 위해선
+\begin{equation}
+    analysis(p) = \text{"오류가 존재하지 않는다"} \Rightarrow error(p) = \text{"오류가 존재하지 않는다"}
+\end{equation}
+를 만족해야 한다.\footnote{더 일반적이고 엄밀한 정의는 임의의 의미론적 명제 $P$에 대해 $analysis(p, P) = true \Rightarrow P \ p$ 이다.} 이 조건은 오류가 존재하지 않는 분석 결과에 대해서는 보증을 하지만, 반면 분석 결과가 "오류가 존재한다"인 경우 어떠한 보증도 하지 않게 된다.
+실제로 실행했을 때 오류가 발생할수도 있지만 그렇지 않고 존재하지 않는 오류에 대한 허위 경보(false positie)를 낼 수도 있다는 의미이다. 앞서 설명한 Rice 정리의 직접적인 영향 때문이다.
+
+\begin{figure}[h]
+    \centering
+    \input{figures/trace_error_abstraction.tex}
+    \caption{오류 상태의 요약}
+    \label{fig:trace_error_abstraction}
+\end{figure}
+
+요약해석 이론은 실제 프로그램 상태에 대한 "보수적인" 근사치를 논리적으로 건전하게 계산하는 방법이다. 
+앞서 활용한 프로그램 흔적 예시를 요약해석의 관점에서 생각해보자면, 그림 \ref{fig:trace_error_abstraction}와 같이 모든 상태들에 대한 구체적인 전이를 계산하지 않고, 초록색 상자처럼 여러개의 구체적인 상태들을 요약해서 나타낼 수 있는 "요약 상태"로 압축하여 나타내는 것이다.
+오류 상태들에 대해서도 마찬가지로 구체적인 오류 상태들을 포함한 근사치(빨간색 상자)로 오류 상태를 정의하게 된다. 보수적인 근사이기 때문에 요약 오류 상태에서는 실제로는 오류 상태가 아니지만 포함된 일반 상태도 존재하게 된다. 하지만 실제 오류 상태들은 빠짐없이 요약 상태에서도 오류로 표현되어야 한다.
+
+\begin{figure}[h]
+    \centering
+
+    \begin{subfigure}[t]{0.48\textwidth}
+    \begin{lstlisting}[language=Python, mathescape]
+    x = input()[x : n]
+    if x < 0:
+        y = -x [x : n, y : -n]
+    elif x > 0:
+        y = x  [x : n, y : n]
+    else:
+        y = 0  [x : n, y : n]
+    \end{lstlisting}
+    \caption{구체적 정수값}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+    \begin{lstlisting}[language=Python, mathescape]
+    x = input() [x : $\top$]
+    if x < 0:
+        y = -x  [x : -, y : +]
+    elif x > 0:
+        y = x   [x : +, y : +]
+    else:
+        y = 0   [x : 0, y : 0]
+    \end{lstlisting}
+    \caption{부호 도메인으로 요약}
+    \end{subfigure}
+
+    \caption{정수값과 부호 도메인}
+    \label{fig:int_sign_abstraction}
+\end{figure}
+
+그림 \ref{fig:int_sign_abstraction}는 간단한 정수값을 계산하는 프로그램에 대해 구체적인 값들을 계산하는 경우와 각 변수의 부호만을 요약해서 계산하는 경우를 나타내었다.
+구체적인 값의 경우 x가 임의의 입력 $n \in \mathbb{Z}$을 받은 이후, 코드에 따라 변수 값을 직접 계산하게 된다. 반면 부호로 요약한 경우 잠재적으로 가능한 입력은 모든 정수이기에,
+$-, 0, +$ 중 어떤 값도 가능한 $\top$ 기호를 통해 나타나게 되고, 이후 조건에 따라 양수, 음수, 0으로 나눠서 표현하게 된다. 부호 정보만을 가지고 있기에 실제로 정수의 값을 알 순 없지만,
+실제 값을 알지 못하더라도 각 분기에 들어갔을 때 가질 수 있는 값들에 대한 성질을 추론할 수 있게 된다.
+
+조금 더 엄밀하게 생각해보면 각 코드의 지점마다 변수가 가질 수 있는 값들은 어떤 조건을 만족하는 집합으로 나타낼 수 있다. \verb|x = input()| 의 경우 정수집합 $\mathbb{Z}$ 가 가능하며, 양수의 경우
+양수들의 집합 $\mathbb{Z}_{+} := \{n \ | \ n > 0\}$, 음수는 $\mathbb{Z}_{-} := \{n \ | \ n < 0\}$, 그리고 한원소 집합 $\{0\}$ 로 표현된다. 따라서 정수값들을 다루는 의미에서 프로그램 상태는
+정수집합 $\mathbb{Z}$의 멱집합 $\mathcal{P}(\mathbb{Z})$가 된다.
+
+부호들의 경우 보다 단순하다. "모든 부호"를 나타내는 $\top$와, $+, 0, -$ 로 구성되어 있다. 추가로 위 코드에서는 쓰이지 않았지만, "모든 부호"의 쌍대에 해당하는 "유효하지 않은 값들의 부호"를 나타내는 $\bot$도 추가된다.
+즉 부호로 요약해서 계산하는 의미론에서는 프로그램 상태가 부호 요약도메인 $\mathrm{sign} := \{\top, +, 0, -, \bot\}$ 의 원소들로 표현된다.
+
+따라서 부호를 계산하는 것이란 주어진 코드 지점에서 구체적인 정수값들의 집합 $s \subset \mathbb{Z}$ 에서 $\mathrm{sign}$으로 대응시키는 함수 $\alpha : \mathcal{P}(\mathbb{Z}) \rightarrow \mathrm{sign}$ 으로 볼 수 있다.
+\verb|x = input()| 를 수행한 이후 $x$가 가능한 값들의 집합은 $\mathbb{Z}$이고 이에 따른 $\alpha(\mathbb{Z}) = \top$ 가 되고, 마찬가지로 $x$ 가 양수인 집합은 $\mathbb{Z}_{+}, \alpha (\mathbb{Z}_{+}) = +$ 가 된다.
+
+\verb|x := 4|와 같은 코드가 실행된 이후 가능한 상태의 집합은 한원소 집합 $\{4\}$이다. $\alpha(\{4\}) = +$가 되는데, 이는 $\alpha(\mathbb{Z}_{+})$와 동일한 결과를 가지게 된다. 
+양수들의 집합보다 구체적인 정보를 가지고 있었지만 부호로 요약되며 해당 정보를 잃게 되는 것이다.
+
+구체적인 값들의 집합에서 요약도메인의 원소로 대응시키는 $\alpha$ 함수가 있듯이, 역으로 요약도메인의 원소에서 구체적인 값들의 집합으로 대응시키는 $\gamma: \mathrm{sign} \rightarrow \mathcal{P}(\mathbb{Z})$를 정의할 수 있다. $\gamma(\top) = \mathbb{Z}, \gamma(+) = \mathbb{Z}_{+}, \ldots$ 로 간단하게 정의된다.
+
+두 함수 $\alpha, \gamma$에 대해서 다음과 같은 성질에 대해 생각해볼 수 있다:
+
+\begin{itemize}
+    \item 임의의 정수집합 $s \subseteq \mathbb{Z}$에 대해, $\gamma(\alpha(s))$의 결과
+    \item 임의의 부호도메인의 원소 $e \in \mathrm{sign}$에 대해, $\alpha(\gamma(e))$의 결과
+\end{itemize}
+
+첫번째 경우는 $\alpha(s)$를 수행하며 구체적인 정보가 소실된다. 이예 따라서 $\{4\} \subset \mathbb{Z}_{+}$와 같이 보다 구체적인 집합을 넣더라도 같은 도메인 값 $\alpha(s)$으로 요약된다. 
+$\gamma{e}$는 해당 부호를 만족하는 원소들을 전부 포함시키기에, 모든 $s \subseteq \mathbb{Z}$ 에 대해 $s \subseteq \gamma(\alpha(s))$임을 알 수 있다.
+
+$\gamma(e)$의 결과는
+\begin{itemize}
+    \item $\gamma(\top) = \mathbb{Z}$
+    \item $\gamma(\bot) = \emptyset$
+    \item $\gamma(+) = \mathbb{Z}_{+}$
+    \item $\gamma(0_{\mathrm{sign}}) = \{0\}$
+    \item $\gamma(-) = \mathbb{Z}_{-}$
+\end{itemize}
+로 열거할 수 있다. 따라서 모든 $e \in \mathrm{sign}$에 대해 $e = \alpha(\gamma(e))$임을 알 수 있다.
+
+$\alpha, \gamma$ 두 함수에 대한 이 성질들은 "보수적인" 요약이 무엇인지를 정확하게 나타내는 역할을 한다. 
+구체적인 값들의 집합을 요약하여 표현한 결과는 항상 원래 값을 포함하여야 함을 정의한 것이고, 이 조건을 통해 요약 상태에서 추론을 하더라도 구체적인 상태를 빠짐없이 반영할 수 있음을 보장하게 된다.
+
+지금까지 설명은 정수들의 집합 $\mathcal{P}(\mathbb{Z})$에 대한 순서관계 $\subseteq$가 정의된 상태에서 진행되었는데 마찬가지로 요약도메인 $\mathrm{sign}$에 대해서도 순서관계 $\sqsubseteq$를 정의할 수 있다:
+$\bot$는 어떠한 값도 나타내지 않기에 $\forall e. \bot \sqsubseteq e$가 되며, 마찬가지로 $\top$는 모든 정수값을 나타내기에 $forall e. e \sqsubseteq \top$가 성립된다. $+, 0, -$는 구체적인 상태로도 서로소 집합이기에 포함관계로도 순서 정의가 불가능하다.
+이는 "부분 순서 관계(partially ordered)"로 정의가 되며, 모든 원소보다 순서 관계상 큰 $\top$ 원소와 작은 원소 $\bot$가 존재하기에 "완전 부분 순서 관계(complete partial order)"의 성질을 가지게 된다.
+
+따라서 위에서 정의한 $\alpha, \gamma$의 두 성질은 순서 관계가 정의된 두 집합 $(\mathcal{P}(\mathbb{Z}), \subseteq)$와 $(\mathrm{sigm}, sqsubseteq)$ 사이의 "갈루아 연결(galois connection)"을 나타낸다:
+\begin{udefinition}[갈루아 연결(Galois Connection)]
+	프로그램의 구체적 상태들의 집합 $C$와 그 위에서의 순서 관계 $\subseteq$ 가 주어지고 요약상태 집합 $A$와 그 위에서의 순서 관계 $\sqsubseteq$가 주어졌을 때,
+    두 함수 $\gamma : A \rightarrow C$와 $\alpha : C \rightarrow A$ 에 대해
+    $$
+    \forall c \in C. \ \forall a \in A. \ \alpha(c) \sqsubseteq a \iff c \subseteq \gamma(a)
+    $$
+    를 만족하면 두 집합과 순서관계 사이에 갈루아 연결을 형성한다고 정의하며, 
+    $$
+    (C, \subseteq) \underset{\gamma}{\overset{\alpha}{\leftrightarrows}} (A, \sqsubseteq)
+    $$
+    로 나타낸다.
+\end{udefinition}
+
+이는 단순히 "정수와 부호"와 같이 특정한 값들과 요약 상태뿐만 아니라 일반적으로 적용할 수 있는 성질이며, 따라서 요약해석에 기반한 정적분석을 구현할 때 논리적으로 건전함을 보이기 위해선 프로그램의 구체적 상태와
+요약 상태간의 갈루아 연결이 형성됨을 증명해야 한다.
+
+\begin{figure}[h]
+    \centering
+    \input{figures/int_sign_galois.tex}
+    \caption{정수 집합과 부호간의 갈루아 대응}
+    \label{fig:int_sign_galois}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \resizebox{0.9\linewidth}{!}{
+        \input{figures/galois_property.tex}
+    }
+    \caption{갈루아 대응과 $\alpha, \gamma$의 성질}
+    \label{fig:galois_property}
+\end{figure}
+
+
+\subparagraph{\textsf{Imp} 중간 표현 언어} ~\\
+\subparagraph{요약 도메인} ~\\
+\subparagraph{제어 흐름 그래프(control-flow graph)} ~\\
+\subparagraph{요약실행 의미론} ~\\
+\subparagraph{SimpleProp: 논리적 명제 정규화 체계} ~\\
+\subparagraph{오류 상태 판별} ~\\
+
+\paragraph{\textsf{TraceInspector} 프론트엔드} ~\\
 \subsubsection{시스템 기능 요구사항}
 % Parse Go files
 % Construct CFG
@@ -246,7 +395,7 @@ $S \hookrightarrow a_1 \hookrightarrow b_1 \hookrightarrow c_1$ 흔적을 예시
 % Detect unreachable branches
 % Replay iteration history
 % Interactive visualization
-\subsubsection{시스템 비기능(품질) 요구사항}
+\subsubsection{시스템 비기능(품질) 요구사항} 
 % modular domains, abstract domain interface
 % language/domain extensibility
 \subsubsection{시스템 구조 및 설계도}
