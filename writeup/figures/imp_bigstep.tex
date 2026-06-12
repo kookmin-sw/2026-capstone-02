@@ -1,0 +1,362 @@
+\newcommand{\evale}{\Downarrow}
+\newcommand{\evals}{\Downarrow}
+\newcommand{\Normal}{\mathsf{normal}}
+\newcommand{\Break}{\mathsf{break}}
+\newcommand{\Continue}{\mathsf{continue}}
+\newcommand{\Return}{\mathsf{return}}
+
+해당 부록은 \imp에 대한 big-step operational semantics의 일부를 수록한다. 
+
+프로그램 상태 $\sigma : \mathbb{V} \rightarrow \mathbb{v}$는 각 변수를 값으로 대응시킨다.
+
+식(expression)의 경우 프로그램 상태 $\sigma$에서 식 $e$를 실행했을 때 값 $v$로 계산됨을 $\sigma \vdash e \Downarrow v$로 표현한다.
+
+함수의 경우 각 함수 이름을 인자명들과 함수 몸통 명령문의 쌍으로 대응시키는 전역 함수 대응 $F : FunName \rightarrow (\mathbb{V}^*, S)$로 표현된다.
+
+\begin{mathpar}
+
+\inferrule*[right=E-Var]
+{}
+{\sigma \vdash x \Downarrow \sigma(x)}
+
+\inferrule*[right=E-Int]
+{}
+{\sigma \vdash n \Downarrow n}
+
+\inferrule*[right=E-Bool]
+{}
+{\sigma \vdash b \Downarrow b}
+
+\inferrule*[right=E-String]
+{}
+{\sigma \vdash s \Downarrow s}
+
+\inferrule*[right=E-Add]
+{
+\sigma \vdash e_1 \Downarrow n_1 \\
+\sigma \vdash e_2 \Downarrow n_2
+}
+{
+\sigma \vdash e_1 + e_2 \Downarrow n_1+n_2
+}
+
+\inferrule*[right=E-Sub]
+{
+\sigma \vdash e_1 \Downarrow n_1 \\
+\sigma \vdash e_2 \Downarrow n_2
+}
+{
+\sigma \vdash e_1 - e_2 \Downarrow n_1-n_2
+}
+
+\inferrule*[right=E-Mul]
+{
+\sigma \vdash e_1 \Downarrow n_1 \\
+\sigma \vdash e_2 \Downarrow n_2
+}
+{
+\sigma \vdash e_1 * e_2 \Downarrow n_1n_2
+}
+
+\inferrule*[right=E-Div]
+{
+\sigma \vdash e_1 \Downarrow n_1 \\
+\sigma \vdash e_2 \Downarrow n_2
+}
+{
+\sigma \vdash e_1 / e_2 \Downarrow n_1/n_2
+}
+
+\inferrule*[right=E-Neg]
+{
+\sigma \vdash e \Downarrow n
+}
+{
+\sigma \vdash -e \Downarrow -n
+}
+
+\inferrule*[right=E-Eq]
+{
+\sigma \vdash e_1 \Downarrow v_1 \\
+\sigma \vdash e_2 \Downarrow v_2
+}
+{
+\sigma \vdash e_1 = e_2 \Downarrow (v_1=v_2)
+}
+
+\inferrule*[right=E-Lt]
+{
+\sigma \vdash e_1 \Downarrow n_1 \\
+\sigma \vdash e_2 \Downarrow n_2
+}
+{
+\sigma \vdash e_1 < e_2 \Downarrow (n_1<n_2)
+}
+
+\inferrule*[right=E-And]
+{
+\sigma \vdash e_1 \Downarrow b_1 \\
+\sigma \vdash e_2 \Downarrow b_2
+}
+{
+\sigma \vdash e_1 \land e_2 \Downarrow (b_1\land b_2)
+}
+
+\inferrule*[right=E-Or]
+{
+\sigma \vdash e_1 \Downarrow b_1 \\
+\sigma \vdash e_2 \Downarrow b_2
+}
+{
+\sigma \vdash e_1 \lor e_2 \Downarrow (b_1\lor b_2)
+}
+
+\inferrule*[right=E-Not]
+{
+\sigma \vdash e \Downarrow b
+}
+{
+\sigma \vdash \neg e \Downarrow \neg b
+}
+
+\inferrule*[right=E-Index]
+{
+\sigma \vdash e_1 \Downarrow a \\
+\sigma \vdash e_2 \Downarrow i
+}
+{
+\sigma \vdash e_1[e_2] \Downarrow a[i]
+}
+
+\inferrule*[right=E-Len]
+{
+\sigma \vdash e \Downarrow a
+}
+{
+\sigma \vdash \mathrm{len}(e) \Downarrow |a|
+}
+
+\inferrule*[right=E-Call]
+{
+\sigma \vdash e_1 \Downarrow v_1 \\
+\cdots \\
+\sigma \vdash e_n \Downarrow v_n \\
+F(f)=(x_1,\ldots,x_n,S)
+\\
+\langle
+S,
+[x_1\mapsto v_1,\ldots,x_n\mapsto v_n]
+\rangle
+\Downarrow
+\langle \sigma',\Return(v)\rangle
+}
+{
+\sigma \vdash f(e_1,\ldots,e_n)
+\Downarrow v
+}
+
+\end{mathpar}
+
+명령문 $S$를 프로그램 상태 $\sigma$에서 실행했을 때는 결과 상태 $\sigma'$와 제어 흐름 결과 $r$를 반환하며
+$\langle S, \sigma \rangle \Downarrow \langle \sigma', r \rangle$로 표기한다.
+
+제어 흐름 결과는 break, continue, return를 처리하기 위한 내부 상태이며 \\
+$\Normal, \Break, \Continue, \Return(v)$로 정의된다.
+
+\begin{mathpar}
+
+\inferrule*[right=Seq-Nil]
+{}
+{
+\langle \epsilon,\sigma\rangle
+\Downarrow
+\langle \sigma,\Normal\rangle
+}
+
+\inferrule*[right=Seq-Cons]
+{
+\langle s,\sigma\rangle
+\Downarrow
+\langle \sigma_1,\Normal\rangle
+\\
+\langle S,\sigma_1\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+{
+\langle s;S,\sigma\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+
+\inferrule*[right=Seq-Abort]
+{
+\langle s,\sigma\rangle
+\Downarrow
+\langle \sigma_1,r\rangle
+\\
+r\neq\Normal
+}
+{
+\langle s;S,\sigma\rangle
+\Downarrow
+\langle \sigma_1,r\rangle
+}
+
+\inferrule*[right=S-Skip]
+{}
+{
+\langle \mathbf{skip},\sigma\rangle
+\Downarrow
+\langle \sigma,\Normal\rangle
+}
+
+\inferrule*[right=S-Assign]
+{
+\sigma \vdash e \Downarrow v
+}
+{
+\langle x:=e,\sigma\rangle
+\Downarrow
+\langle \sigma[x\mapsto v],\Normal\rangle
+}
+
+\inferrule*[right=S-IfTrue]
+{
+\sigma \vdash e \Downarrow \mathbf{true}
+\\
+\langle S_t,\sigma\rangle
+\Downarrow
+\langle \sigma',r\rangle
+}
+{
+\langle
+\mathbf{if}\ e\ \mathbf{then}\ S_t\ \mathbf{else}\ S_f,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma',r\rangle
+}
+
+\inferrule*[right=S-IfFalse]
+{
+\sigma \vdash e \Downarrow \mathbf{false}
+\\
+\langle S_f,\sigma\rangle
+\Downarrow
+\langle \sigma',r\rangle
+}
+{
+\langle
+\mathbf{if}\ e\ \mathbf{then}\ S_t\ \mathbf{else}\ S_f,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma',r\rangle
+}
+
+\inferrule*[right=S-WhileFalse]
+{
+\sigma \vdash e \Downarrow \mathbf{false}
+}
+{
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma,\Normal\rangle
+}
+
+\inferrule*[right=S-WhileTrue]
+{
+\sigma \vdash e \Downarrow \mathbf{true}
+\\
+\langle S,\sigma\rangle
+\Downarrow
+\langle \sigma_1,\Normal\rangle
+\\
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma_1
+\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+{
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+
+\inferrule*[right=S-WhileBreak]
+{
+\sigma \vdash e \Downarrow \mathbf{true}
+\\
+\langle S,\sigma\rangle
+\Downarrow
+\langle \sigma',\Break\rangle
+}
+{
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma',\Normal\rangle
+}
+
+\inferrule*[right=S-WhileContinue]
+{
+\sigma \vdash e \Downarrow \mathbf{true}
+\\
+\langle S,\sigma\rangle
+\Downarrow
+\langle \sigma_1,\Continue\rangle
+\\
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma_1
+\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+{
+\langle
+\mathbf{while}\ e\ \mathbf{do}\ S,
+\sigma
+\rangle
+\Downarrow
+\langle \sigma_2,r\rangle
+}
+
+\inferrule*[right=S-Break]
+{}
+{
+\langle \mathbf{break},\sigma\rangle
+\Downarrow
+\langle \sigma,\Break\rangle
+}
+
+\inferrule*[right=S-Continue]
+{}
+{
+\langle \mathbf{continue},\sigma\rangle
+\Downarrow
+\langle \sigma,\Continue\rangle
+}
+
+\inferrule*[right=S-Return]
+{
+\sigma \vdash e \Downarrow v
+}
+{
+\langle \mathbf{return}\ e,\sigma\rangle
+\Downarrow
+\langle \sigma,\Return(v)\rangle
+}
+
+\end{mathpar}

@@ -1,0 +1,70 @@
+\[
+\begin{array}{rcl}
+e &::=& \mathbb{X}
+      \mid \mathbb{N}
+      \mid \mathbb{B}
+      \mid \mathbb{S}
+      \mid \{e_1,\ldots,e_n\}
+\\
+  &\mid& e + e
+      \mid e - e
+      \mid e * e
+      \mid e / e
+      \mid e \bmod e
+\\
+  &\mid& e = e
+      \mid e \neq e
+      \mid e < e
+      \mid e \le e
+      \mid e > e
+      \mid e \ge e
+\\
+  &\mid& e \land e
+      \mid e \lor e
+\\
+  &\mid& -e
+      \mid \neg e
+\\
+  &\mid& (e)
+      \mid e[e]
+\\
+  &\mid& f(e_1,\ldots,e_n)
+\\
+  &\mid& \mathrm{len}(e)
+\\
+  &\mid& \mathrm{make\_array}(e,e)
+\\[1em]
+
+s &::=& \mathbf{skip}
+\\
+  &\mid& x := e
+\\
+  &\mid& e[e] := e
+\\
+  &\mid& \mathbf{if}\ e\ \mathbf{then}\ \{s^*\}
+      \ \mathbf{else}\ \{s^*\}
+\\
+  &\mid& \mathbf{while}\ e\ \mathbf{do}\ \{s^*\}
+\\
+  &\mid& \mathbf{break}
+      \mid \mathbf{continue}
+\\
+  &\mid& e{++}
+      \mid e{--}
+\\
+  &\mid& f(e_1,\ldots,e_n)
+\\
+  &\mid& \mathbf{print}(e_1,\ldots,e_n)
+\\
+  &\mid& \mathbf{scanf}(s,e_1,\ldots,e_n)
+\\
+  &\mid& \mathbf{return}\ e
+\\[1em]
+
+\tau &::=& \mathbf{int}
+        \mid \mathbf{bool}
+        \mid \mathbf{string}
+\\
+     &\mid& \mathbf{array}\langle\tau\rangle
+\end{array}
+\]

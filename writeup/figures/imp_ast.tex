@@ -1,0 +1,17 @@
+\begin{tikzpicture}[
+    level distance=1.3cm,
+    sibling distance=2.5cm,
+]
+\node {AssignStmt}
+    child { 
+        node {VarExpr}
+        child { node {"b"} } 
+    }
+    child {
+        node {ArrayLitExpr}
+        child {
+            node {IntLitExpr}
+            child {node {100} } 
+        }
+    };
+\end{tikzpicture}
