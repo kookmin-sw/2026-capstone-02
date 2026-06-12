@@ -23,6 +23,7 @@
 \newcommand{\ReportVersion}{1.0}
 \newcommand{\imp}{\textsf{Imp}}
 \newcommand{\traceinspector}{\textsf{TraceInspector}}
+\newcommand{\interval}[2]{[ #1, #2 ]}
 
 \input{style/header_footer.tex}
 \begin{document}
@@ -442,6 +443,79 @@ Go AST의 경우 리터럴에 대해서도 종류와 값을 분리하여 표기�
 \imp의 문법적 정의는 그림 \ref{fig:imp_syntax}과 같으며, \imp 의 bigstep operational semantics 일부는 부록 \ref{imp_semantics}에 수록하였다.
 
 \subparagraph{요약 도메인} ~\\
+
+\traceinspector는 정수값을 구간 요약도메인으로, bool값을 bool 요약도메인으로, 그리고 배열을 배열 축약 요약도메인으로 요약하여 실행한다.
+
+구간 요약도메인 $\mathbb{I}$란 가능한 정수들의 집합을 $\interval{l}{h}$ 의 닫힌 구간으로 나타낸 요약 도메인이다. 
+
+구간 요약도메인에 대한 $\alpha, \gamma$ 정의는 다음과 같다:
+
+\begin{itemize}
+    \item $\alpha(\mathbb{Z}) = [-\infty, \infty] = \top$
+    \item $\alpha(\emptyset) = \bot$
+    \item $\alpha(\{x_0, x_1, \cdots, x_n\}) = [\mathrm{min}(x_0, x_1, \cdots, x_n), \mathrm{max}(x_0, x_1, \cdots, x_n)]$
+\end{itemize}
+
+\begin{itemize}
+    \item $\gamma(\top) = \mathbb{Z}$
+    \item $\gamma(\bot) = \emptyset$
+    \item $\gamma(\interval{l}{h}) = \{ i \in \mathbb{Z} \ | \ l \leq i \leq h \}$
+\end{itemize}
+
+구간끼리의 산술은 다음과 같다:
+\begin{align*}
+	\interval{l_1}{u_1} + \interval{l_2}{u_2} &= \interval{l_1 + l_2}{u_1 + u_2} \\
+	\interval{l_1}{u_1} \times \interval{l_2}{u_2} &= \interval{\mathrm{min}(l_1 u_1, l_1 u_2, l_2 u_1, l_2 u_2)}{\mathrm{max}(l_1 u_1, l_1 u_2, l_2 u_1, l_2 u_2)} \\
+	-\interval{l}{u} &= \interval{-u}{-l} \\
+	i_1 \sqcup i_2 &= 
+	\begin{cases}
+		i_2, & \text{if } i_1 = \bot \\
+		i_1, & \text{if } i_2 = \bot \\
+		\interval{\mathbf{min}(l_1, l_2)}{\mathrm{max}(u_1, u_2)} & \text{where } i_1 = \interval{l_1}{u_1}, i_2 = \interval{l_2}{u_2}
+	\end{cases} \\
+\end{align*}
+
+갈루아 연결을 형성하기 위해 구간도메인 $i_1, i_2 \in \mathbb{I}$ 간의 순서관계 $i_1 \sqsubseteq i_2$를 다음과 같이 정의한다:
+\begin{align*}
+    i_1 \sqsubseteq i_2 &= 
+	\begin{cases}
+		\mathbf{true}, & \text{if } i_1 = \bot \\
+		i_1 = \bot, & \text{if } i_2 = \bot \\
+		l_2 \leq l_1 \wedge u_1 \leq u_2, & \text{where } i_1 = \interval{l_1}{u_1}, i_2 = \interval{l_2}{u_2}
+	\end{cases} \\
+\end{align*}
+죽 $i_1$이 $i_2$의 범위 내에 완전히 포함되어 있는 경우 $i_1 \sqsubseteq i_2$가 성립힌다.
+
+그림 \ref{fig:int_lattice}\footnote{Patrick Cousot: Principle of Abstract Interpretation의 33.1장에서 발췌함}는 정수 요약도메인을 격자로 표현한 그림이다.
+이렇게 정의된 정수 구간도메인은 그 격자의 높이가 무한이 높다. 따라서 widening 기법을 적용하여 무한히 증가하는 join을 강제로 종료시켜 주기 위한 widening 연산 $\triangledown$ 이 필요하다:
+
+\begin{align*}
+    [n, p] \triangledown [n, q] = 
+    \begin{cases}
+        [n, p], & \text{if } p \geq q \\
+        [n, +\infty], & \text{if } p < q
+    \end{cases}
+\end{align*}
+
+Widening 연산은 일정 횟수 이상 상한(혹은 하한)이 단조 증가하는 경우 정확도를 희생하여 모든 정수들의 상계(혹은 하계)인 $\pm \infty$를 치환하여 분석이 종료할 수 있도록 유도하는 역할을 한다.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/interval_lattice.png}
+    \caption[Caption for LOF]%
+        {확장된 정수 구간도메인}
+    \label{fig:int_lattice}
+\end{figure}
+
+Boolean 값은 $\mathbf{true}, \mathbf{false}$ 만 존재하기에 요약도메인을 그림 \ref{fig:bool_domain}과 같이 정의할 수 있다.
+$\top$ 의 경우 $\mathbf{true}, \mathbf{false}$ 가 모두 가능한 경우이마, $\bot$는 유효한 boolean 값 산출이 불가능한 경우이다.
+\begin{figure}[t]
+    \centering
+    \input{figures/bool_domain_lattice.tex}
+    \caption{Boolean 요약도메인}
+    \label{fig:bool_domain}
+\end{figure}
+
 \subparagraph{제어 흐름 그래프(control-flow graph)} ~\\
 \subparagraph{요약실행 의미론} ~\\
 \subparagraph{SimpleProp: 논리적 명제 정규화 체계} ~\\
