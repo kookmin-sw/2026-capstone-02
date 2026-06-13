@@ -13,11 +13,16 @@
 \usepackage{subcaption}
 \usepackage{url}
 \usepackage{mathpartir}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
 
 
 \usetikzlibrary{fit}
 \usetikzlibrary{arrows.meta,positioning}
 \usetikzlibrary{shapes.geometric}
+\usetikzlibrary{calc}
 
 \newcommand{\ReportVersion}{1.0}
 \newcommand{\imp}{\textsf{Imp}}
@@ -25,8 +30,18 @@
 \newcommand{\interval}[2]{[ #1, #2 ]}
 
 \input{style/header_footer.tex}
+
 \begin{document}
-\input{style/title.tex}
+\input{style/main_title.tex}
+\input{style/submission_statement.tex}
+\input{style/master_toc.tex}
+
+\input{style/abstract_title.tex}
+\input{style/abstract.tex}
+
+\input{style/second_section_title.tex}
+\input{style/final_section_title.tex}
+\input{style/final_title.tex}
 
 \renewcommand{\contentsname}{목 차}
 \renewcommand{\cfttoctitlefont}{\hfill\Large\bfseries}
@@ -111,7 +126,24 @@ Facebook Infer\cite{calcagno2011}, clang static analyzer\cite{kremenek2008}
 % “understanding the reasoning process”
 \section{개발 내용 및 결과물}
 \subsection{목표}
-\cite{lee2025}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/react_trace.png}
+    \caption{react-tRace의 시각화 인터페이스}
+    \label{fig:react-trace}
+\end{figure}
+
+\textit{React-tRace}\cite{lee2025}는 React 웹 프레임워크의 Hook가 어떤 과정을 따라 컴포넌트를 변화시키는지 단계적인 형식 의미론을 정의한 연구이다. 
+\textit{React-tRace}의 흥미로운 부분은 기존 형식 의미론 연구와는 다르게 웹 인터페이스(그림 \ref{fig:react-trace})를 통해 사용자가 직접 해당 의미론에 따라 웹페이지 컴포넌트의 상태 변화를 직접 관찰할 수 있게 해준 점이다.
+따라서 단순하게 수식으로 정의한 의미론을 읽는 것을 넘어 각 변화 단계가 어떤 수식에 의해 변했는지 구체적으로 추론하고 이해할 수 있다는 점이 직관적으로 와닿고, 복잡한 알고리즘을 이해하기에 탁월한 방법임을 파악하게 되었다.
+
+\traceinspector는 해당 연구로부터 영감을 받아 단순히 오류를 탐지해서 알려주는 정적 분석기를 넘어, 분석 과정을 시각적으로 나타내어 사용자가 어떤 과정을 통해 오류가 탐지되었는지 해석 가능하게끔 구현된 정적 분석기이다.
+즉 분석기의 동작 흐름을 사용자가 직접 관찰하며 올바른 추론을 분석기가 수행했는지, 그리고 어떻게 정적 분석이 이루어졌는지를 전달하고자 본 프로젝트를 구상하였다.
+다양한 오류를 신속하게 분석하는게 아닌 어떤 과정으로 정적 분석이 프로그램을 처리하고 오류를 탐지하는지에 대한 정보 전달 및 시각화를 목표로 하며, 이에 따른 프로그래밍 언어론과 정적 분석 이론에 대한 교육적 자료로 활용되기를 바란다.
+
+또한 \textit{React-tRace}의 형식 의미론처럼 신뢰 가능하고 이론적으로 건전한 분석기를 구현하는 것을 목표로 하였다. 이에 따라 기존 정적 분석기보다는 높은 수준의 신뢰성을 추구할 수 있도록 설계하였고 요약해석 이론을 도입하여 엄밀한 명세와 정의를 바탕으로 정적 분석기를 구현하였다.
+
 % project goals
 % what you intended to demonstrate
 % interpretability
@@ -155,7 +187,7 @@ IDE와의 통합 등도 가능하다.
 이처럼 실행했을 때의 행동과 관련되어 있고, 참 또는 거짓으로 판별되는 명제들을 의미론적 성질(semantic property)로 칭하게 된다. "의미론적" 성질인 이유는 
 단순히 프로그램의 겉모양인 구문(syntax)만 분석해서 판별할 수 없기 때문이다. 
 
-코드 \ref{collatz}은 콜라츠 수열(Collatz sequence)의 $n$번항을 계산하는 함수이다. 콜라츠 수열은 다음과 같은 정의를 가진다:
+코드 \ref{collatz}은 콜라츠 수열(Collatz sequence)의 $n$번항을 계산하는 함수이며 다음과 같은 정의를 가진다:
 $$
 C(n) =
 \begin{cases}
@@ -182,7 +214,7 @@ def collatz(n):
 모든 양수 $n$에 대해서 위 함수가 종료할까? 1937년도에 수학자 콜라츠는 "그렇다"고 추측했지만, 아직까지도 그가 맞았다는 증명이 존재하지 않는다.
 이에 따라 특정 입력값에 대해서는 실행을 통해 확인할 수 있지만, 모든 양수 입력에 대해 종료함을 보장하는 일반적인 방법은 현재까지 알려져 있지 않다.
 
-마찬가지로 튜링의 유명한 정지 문제(halting problem)\cite{turing1936}가 있다: 튜링의 정지 문제는 "임의의 프로그램이 주어졌을 때, 해당 프로그램이 유한한 시간 내에 정지할지 정확히 판별하는
+비슷하게 튜링의 유명한 정지 문제(halting problem)\cite{turing1936}가 있다: 튜링의 정지 문제는 "임의의 프로그램이 주어졌을 때, 해당 프로그램이 유한한 시간 내에 정지할지 정확히 판별하는
 프로그램은 존재할 수 없다"는 정리이다.
 
 콜라츠 추측과 정지 문제와 같이 우리는 답을 정확히 알 수 없는 의미론적 성질이 존재함을 알게 되었다. 그렇다면 비자명한 의미론적 성질 중 자동으로 완벽하게 판별 가능한 것이 단 하나라도 존재할까? 놀랍게도
@@ -338,7 +370,7 @@ $-, 0, +$ 중 어떤 값도 가능한 $\top$ 기호를 통해 나타나게 되�
 \end{itemize}
 
 첫번째 경우는 $\alpha(s)$를 수행하며 구체적인 정보가 소실된다. 이예 따라서 $\{4\} \subset \mathbb{Z}_{+}$와 같이 보다 구체적인 집합을 넣더라도 같은 도메인 값 $\alpha(s)$으로 요약된다. 
-$\gamma{e}$는 해당 부호를 만족하는 원소들을 전부 포함시키기에, 모든 $s \subseteq \mathbb{Z}$ 에 대해 $s \subseteq \gamma(\alpha(s))$임을 알 수 있다.\cite{cousot1977}
+$\gamma(e)$는 해당 부호를 만족하는 원소들을 전부 포함시키기에, 모든 $s \subseteq \mathbb{Z}$ 에 대해 $s \subseteq \gamma(\alpha(s))$임을 알 수 있다.\cite{cousot1977}
 
 $\gamma(e)$의 결과는
 \begin{itemize}
@@ -357,7 +389,7 @@ $\alpha, \gamma$ 두 함수에 대한 이 성질들은 "보수적인" 요약이 
 $\bot$는 어떠한 값도 나타내지 않기에 $\forall e. \bot \sqsubseteq e$가 되며, 마찬가지로 $\top$는 모든 정수값을 나타내기에 $\forall e. e \sqsubseteq \top$가 성립된다. $+, 0, -$는 구체적인 상태로도 서로소 집합이기에 포함관계로도 순서 정의가 불가능하다.
 이는 "부분 순서 관계(partially ordered)"로 정의가 되며, 모든 원소보다 순서 관계상 큰 $\top$ 원소와 작은 원소 $\bot$가 존재하기에 "완전 부분 순서 관계(complete partial order)"의 성질을 가지게 된다.
 
-따라서 위에서 정의한 $\alpha, \gamma$의 두 성질은 순서 관계가 정의된 두 집합 $(\mathcal{P}(\mathbb{Z}), \subseteq)$와 $(\mathrm{sigm}, sqsubseteq)$ 사이의 "갈루아 연결(galois connection)"을 나타낸다:
+따라서 위에서 정의한 $\alpha, \gamma$의 두 성질은 순서 관계가 정의된 두 집합 $(\mathcal{P}(\mathbb{Z}), \subseteq)$와 $(\mathrm{sign}, \sqsubseteq)$ 사이의 "갈루아 연결(galois connection)"을 나타낸다:
 \begin{udefinition}[갈루아 연결(Galois Connection)]
 	프로그램의 구체적 상태들의 집합 $C$와 그 위에서의 순서 관계 $\subseteq$ 가 주어지고 요약상태 집합 $A$와 그 위에서의 순서 관계 $\sqsubseteq$가 주어졌을 때,
     두 함수 $\gamma : A \rightarrow C$와 $\alpha : C \rightarrow A$ 에 대해
@@ -436,7 +468,7 @@ Go AST의 경우 리터럴에 대해서도 종류와 값을 분리하여 표기�
     \centering
     \input{figures/imp_syntax.tex}
 
-    \caption{\imp의 명령문(statement), 수식(expression) 문법}
+    \caption{\imp의 명령문(statement), 식(expression)들의 문법}
     \label{fig:imp_syntax}
     
 \end{figure}
@@ -487,7 +519,7 @@ Go AST의 경우 리터럴에 대해서도 종류와 값을 분리하여 표기�
 \end{align*}
 죽 $i_1$이 $i_2$의 범위 내에 완전히 포함되어 있는 경우 $i_1 \sqsubseteq i_2$가 성립힌다.
 
-그림 \ref{fig:int_lattice}\footnote{Patrick Cousot: Principle of Abstract Interpretation의 33.1장에서 발췌함}는 정수 요약도메인을 격자로 표현한 그림이다.
+그림 \ref{fig:int_lattice}은 정수 요약도메인을 격자로 표현한 그림이다\footnote{Patrick Cousot: Principle of Abstract Interpretation의 33.1장에서 발췌함}.
 이렇게 정의된 정수 구간도메인은 그 격자의 높이가 무한이 높다. 따라서 widening 기법을 적용하여 무한히 증가하는 join을 강제로 종료시켜 주기 위한 widening 연산 $\triangledown$ 이 필요하다:
 
 \begin{align*}
@@ -498,7 +530,7 @@ Go AST의 경우 리터럴에 대해서도 종류와 값을 분리하여 표기�
     \end{cases}
 \end{align*}
 
-Widening 연산은 일정 횟수 이상 상한(혹은 하한)이 단조 증가하는 경우 정확도를 희생하여 모든 정수들의 상계(혹은 하계)인 $\pm \infty$를 치환하여 분석이 종료할 수 있도록 유도하는 역할을 한다.
+Widening 연산은 일정 횟수 이상 상한(혹은 하한)이 단조 증가(감소)하는 경우 정확도를 희생하여 모든 정수들의 상계(하계)인 $\pm \infty$를 치환하여 분석이 종료할 수 있도록 유도하는 역할을 한다.
 
 \begin{figure}[t]
     \centering
@@ -519,10 +551,10 @@ $\top$ 의 경우 $\mathbf{true}, \mathbf{false}$ 가 모두 가능한 경우이
 
 \subparagraph{제어 흐름 그래프(control-flow graph)} ~\\
 
-간략화된 AST가 생성된 이후 \traceinspector는 \verb|if, while|등의 명령문에 의해 프로그램의 실행 흐름을 구조화하기 위한 제어 흐름 그래프(control-flow graph, CFG)구조로 번역한다.
+간략화된 AST가 생성된 이후 \traceinspector는 \verb|if, while|등의 명령문에 의해 프로그램의 실행 흐름을 구조화하기 위한 제어 흐름 그래프(control-flow graph, CFG)구조\cite{alfred2007}로 번역한다.
 함수별 AST에서 CFG를 생성하는 알고리즘은 다음과 같이 동작한다:
 \begin{enumerate}
-    \item 함수의 진입 명령문으로부터 깊이 우선 탑색을 통해 함수의 종말 명령문부터 노드로 번역하여 ID를 부여한다.
+    \item 함수의 진입 명령문으로부터 깊이 우선 탐색을 통해 함수의 종말 명령문부터 노드로 번역하여 ID를 부여한다.
     \item 후속 노드의 DFS가 종료되면서 현재 노드와 이어줄 간선을 생성한다. 만약 현재 노드가 조건문, 반복문과 같이 분기를 포함하는 경우 각 참, 거짓 명령문별 노드와 간선을 생성해준다.
     \item \verb|break, continue|는 현재 동작하고 있는 가장 깊은 반복문에 대해 동작한다. 이를 처리하기 위해서 현재 처리중인 반복문을 스택 구조로 저장하여 중첩된 반복문에 대한 정보를 저장한다.
     \item 이에 따라 \verb|break, continue| 및 루프 탈출은 반복문 스택의 top에 대해 동작하며, 반복문을 처리 완료했다면 스택에서 반복문 정보를 제거한다.
@@ -546,7 +578,7 @@ $\top$ 의 경우 $\mathbf{true}, \mathbf{false}$ 가 모두 가능한 경우이
 
 이제 입력 프로그램을 CFG 형태로 표현하여 분석이 수월한 형태의 자료구조로 번역하였다. 또한 \imp의 구체적인 값 타입들을 전부 각각의 요약도메인으로 대응시키는 $\alpha$ 함수도 정의하였다.
 
-\imp의 구체적인 실행의미론에선 프로그램 상태 $\sigma : \mathbb{V} \rightarrow \mathbb{v}$는 각 변수를 값으로 대응시켰다(부록 참조). 
+\imp의 구체적인 실행의미론에선 프로그램 상태 $\sigma : \mathbb{V} \rightarrow v$는 각 변수를 값으로 대응시켰다(부록 참조). 
 또한 명령문 $S$를 프로그램 상태 $\sigma$에서 실행했을 때는 결과 상태 $\sigma'$와 제어 흐름 결과 $r$를 반환하며
 $\langle S, \sigma \rangle \Downarrow \langle \sigma', r \rangle$로 표기했다.
 
@@ -574,8 +606,9 @@ $\mathsf{AbstractValue}$는 각 변수마다 존재하기에, 주어진 프로�
     \item 이후 $l'$ 에서 바로 도달 가능한 후속 노드들 $next(l')$에 대해 위 과정을 반복해서 수행
  \end{enumerate}
 
-따라서 초기 프로그램 상태에서부터 각 노드에 대해 요약실행 의미론을 적용하여 노드별 상태를 계속해서 갱신하고, 더 이상 변화가 생기지 않는 \textbf{고정점}에 도달할 때 까지 반복 수행한다. 
-이렇게 계산된 고정점 프로그램 상태는 각 노드에서 관측 가능한 모든 값에 대한 정보가 반영된 프로그램 상태이며, 실제로 실행했을 때의 모든 값을 포함한 보수적인 근사 상태가 된다.
+위 알고리즘은 초기 프로그램 상태에서부터 각 노드에 대해 요약실행 의미론을 적용하여 노드별 상태를 계속해서 갱신하고, 더 이상 변화가 생기지 않는 \textbf{고정점}에 도달할 때 까지 반복 수행한다. 
+이렇게 계산된 고정점 프로그램 상태는 각 노드에서 관측 가능한 모든 값에 대한 정보가 반영된 프로그램 상태이며, 실제로 실행했을 때의 모든 값을 포함한 보수적인 근사 상태가 된다. 
+컴파일러가 data-flow analysis를 수행할 때 활용하는 Kildall 알고리즘\cite{kildall1973}처럼 CFG위에서 노드별 상태를 계산하는 과정이 유사하다.
 
 그림 \ref{fig:abs_conc_commute}은 요약 실행의미론과 구체적 실행의미론의 관계를 묘사한다. 
 앞서 설명한 보수적인 근사가 성립하기 위해선, 요약 메모리 상태 $M^{\#}$가 모든 명령문에 대해 $M^{\#'}$로 요약실행이 된다면, $M^{\#}$의 구체적 상태 $\sigma = \gamma(M^{\#})$에 대해 실제로 실행했을 때 얻는 상태 $\sigma'$는 
@@ -603,9 +636,10 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
     $$
     가 성립힌다.
 \end{utheorem}
-증명은 \imp의 명령문에 대한 구조적 귀납으로 실시한다. 
+증명은 각 요약도메인과 타입에 대한 갈루아 연결을 보인 후 \imp의 명령문에 대한 구조적 귀납으로 실시한다. 
 
-\subparagraph{SimpleProp: 논리적 명제 정규화 체계} ~\\
+이 증명은 \traceinspector의 분석 결과가 주어진 요약 의미론과 요약 도메인이 정의된 구체적 실행의미론에 대한 정확한 근사를 항상 취한다는 것을 보장한다.
+
 \subparagraph{오류 상태 판별} ~\\
 
 계산된 요약 상태 위에서 \traceinspector 분석기는 두가지 오류 조건을 검사한다. 
@@ -619,6 +653,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 
 \paragraph{\textsf{TraceInspector} 프론트엔드} ~\\
+% frontend info here 
 \subsubsection{시스템 기능 요구사항}
 % Parse Go files
 % Construct CFG
@@ -632,12 +667,31 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 % modular domains, abstract domain interface
 % language/domain extensibility
 \subsubsection{시스템 구조 및 설계도}
-% diagram here
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.99\textwidth]{images/architecture.png}
+    \caption{\traceinspector 전체 시스템 구조}
+    \label{fig:architecture}
+\end{figure}
+
+그림 \ref{fig:architecture}는 \traceinspector 의 전반적인 구조를 나타낸다. \traceinspector 분석기는 입력 Go 프로그램에 대한 요약 프로그램 상태를 계산하여 오류 정보와 함께 JSON 형태로 표준 출력에 출력한다.
+
+\traceinspector 프론트엔드는 사용자로부터 코드를 입력받아 분석기를 호출하여 수행 결과를 시각화하는 웹 인터페이스와 백엔드로 구성되어 있다.
+
 \subsubsection{활용/개발된 기술}
 
-\textsf{TraceInspector} 분석기는 Go 소스 파일 파싱을 위한 \textsf{go/parser}\cite{goparser} 패키지를 활용한다. 
+\textsf{TraceInspector} 분석기는 Go 소스 파일 파싱을 위한 \textsf{go/parser}\cite{goparser} 패키지를 활용한다.
+이후의 모든 분석 단계는 외부 라이브러리를 활용하지 않고 직접 구현되었지만 상술했듯이 요약해석 이론 자체는 잘 알려진 정적 분석 기법이다.
 
 \subsubsection{현실적 제한 요소 및 그 해결 방안}
+
+\traceinspector 분석기는 본질적으로 입력 언어인 Go의 일부분에 대해서만 분석을 수행할 수 있다. 우선적으로 포인터 자료형에 대한 분석을 지원하지 않는다. 
+요약 실행의미론과 요약 프로그램 상태에서는 포인터나 주소 등의 위치와 참조의 개념 없이 오직 단일 값으로만 간주하였고, 지금의 요약 프로그램 상태는 포인터 자료형에 대한 추론을 할 수 없다.
+포인터 자료형에 대한 분석은 abstract heap라는, $\mathsf{AbstractVarMemMap} : \mathbb{V} \rightarrow \mathsf{AbstractValue}$가 아닌 
+주소 $\mathbb{A}$를 값으로 대응하는 $\mathsf{AbstractHeap} : \mathbb{A} \rightarrow \mathsf{AbstractValue}$를 구현하여 논해야 한다.
+
+
 \subsubsection{결과물 목록} \label{artifact}
 
 \traceinspector 의 소스는 루트 경로 내에 \verb|traceinspector| 와 \verb|front_src| 로 크게 나누어져 있다.
@@ -687,10 +741,88 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 \bibliography{ref}
 \section{부록}
 \subsection{사용자 메뉴얼}
+
+\traceinspector 웹 인터페이스에서 분석 대상 Go 소스 파일을 Open을 통해 분석을 요청한다. 이후 인터페이스는 업로드한 소스코드와 이에 대응되는 CFG, 그리고 오류 발생 여부를 표시한다.
+
+사용자는 이후 하단의 재생 바를 드래그하여 각 분석 단계별 요약 프로그램 상태를 CFG상에서 관측할 수 있으며, 좌/우 방향키를 이용하여 한 단계별 이동을 할 수 있다.
+
+CFG는 각 함수 단위로 생성되며, 함수별 명령문과, 명령문이 실행될 프로그램 상태를 표시한다. 현 분석 단계에서 갱신된 프로그램 상태를 붉은색으로 음영 처리되어 변화를 직접 확인할 수 있다.
+
+CFG 탐색 창은 드래그와 스크롤을 통해 이동 및 확대가 가능하며, 더블클릭을 통해 상태를 초기화할 수 있다.
+
+마지막으로 재상 바 하단의 노란색 화살표는 오류 상태가 최초로 탐지된 분석 단계를 나타낸다. 화살표를 클릭하면 해당 분석 상태로 이동하고, 오류 정보와 더불어 어떤 명령의 어떤 변수 상태에서 오류가 발생하게 되었는지 관찰 가능하다.
+
 \subsection{운영자 메뉴얼}
 \subsection{배포 가이드}
 \subsection{\textsf{Imp} 형식 의미론} \label{imp_semantics}
 \input{figures/imp_bigstep.tex}
-\subsection{요약도메인 명세}
+\subsubsection{요약 도메인 Go 인터페이스}
+
+\begin{figure}[h]
+    \centering
+    \begin{lstlisting}[language=Go, basicstyle=\tiny]
+type AbstractAnalyzer[IntDom domain.IntegerDomain[IntDom], ArrDom ArrayDomain[IntDom, ArrDom]] struct {
+	Function_cfgs        FunctionCFGMap
+	Function_defs        imp.ImpFunctionMap
+	Settings             AnalysisSettings
+	Intdomain_default    IntDom
+	Arraydomain_default  ArrDom
+	function_pre_mem_map map[imp.ImpFunctionName]*AbstractFunctionMem[IntDom, ArrDom]
+	output_handler       *AnalyzerOutputHandler
+}
+    \end{lstlisting}
+    \caption{\textsf{AbstractAnalyzer} 구조체 정의와 generics를 활용한 모듈러한 설계}
+    \label{fig:abstractanalyzer_code}
+\end{figure}
+
+
+\traceinspector 분석기는 Go의 generics를 활용하여 특정 요약도메인 구현에 의존하지 않고, 사용자가 정의한 임의의 요약도메인을 활용할 수 있도록 구현하였다.
+\verb|AbstractDomain| 인터페이스를 설계하여 정수 및 배열 타입에 대한 요약 도메인을 정의하고 분석기에 바로 활용할 수 있도록 구현되어 있다.
+
+코드 \ref{fig:abstractanalyzer_code}는 \traceinspector 분석기를 초기화하는 구조체의 정의이다. \verb|IntDom, ArrDom|에 \verb|IntegerDomain, ArrayDomain|
+를 만족하는 도메인 구현체를 넘겨주면 분석기는 구현에 구현받지 않고 온전하 동작할 수 있다.
+
+\begin{figure}[h]
+    \centering
+    \begin{lstlisting}[language=Go, basicstyle=\tiny]
+type AbstractDomain[DomainImpl any] interface {
+	IsBot() bool
+	IsTop() bool
+	CreateBot() DomainImpl
+	CreateTop() DomainImpl
+	Incl(DomainImpl) bool
+	Join(DomainImpl) (DomainImpl, bool)
+	Widen(DomainImpl) DomainImpl
+	String() string
+	Clone() DomainImpl
+}
+
+type IntegerDomain[DomainImpl any] interface {
+	AbstractDomain[DomainImpl]
+	From_IntLitExpr(imp.IntLitExpr) DomainImpl
+	Add(DomainImpl) DomainImpl
+	Sub(DomainImpl) DomainImpl
+	Mul(DomainImpl) DomainImpl
+	Div(DomainImpl) DomainImpl
+	Mod(DomainImpl) DomainImpl
+	Eq(DomainImpl) BoolDomain
+	Neq(DomainImpl) BoolDomain
+	Lessthan(DomainImpl) BoolDomain
+	Greaterthan(DomainImpl) BoolDomain
+	Leq(DomainImpl) BoolDomain
+	Geq(DomainImpl) BoolDomain
+	Neg() DomainImpl
+	Filter(FilterQueryType, DomainImpl) DomainImpl
+}
+    \end{lstlisting}
+    \caption{\textsf{AbstractDomain} 과 \textsf{IntegerDomain} 인터페이스 정의}
+    \label{fig:domain_interface}
+\end{figure}
+
+코드 \ref{fig:domain_interface}는 각각 공통 요약도메인과 정수 요약도메인의 추상 인터페이스 정의이다.
+\verb|AbstractDomain|는 모든 요약도메인 구현체들이 구현해야할 핵심 함수들을 정의하고 있고, \verb|IntegerDomain|는 산술 및 비교 연산 등 정수를 나타내는 도메인이 구현해야 할 함수들을 명세하고 있다.
+이처럼 해당 함수들을 구현한 구현체를 \traceinspector 분석기는 그 구체적 형태에 대해 신경쓰지 않고 요약 실행의미론과 접목해서 실행할 수 있는 구조로 설계되었다.
+
+\input{style/disclaimer.tex}
 
 \end{document}
