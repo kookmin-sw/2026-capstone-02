@@ -698,7 +698,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
     \caption{Open 이후 UI}
 \end{figure}
 
-다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 "front_src/go/source.go" 경로에 저장된다.
+다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 \verb|front_src/go/source.go| 경로에 저장된다.
 이때, "Multer" 라이브러리를 이용하여 파일 시스템에 직접적으로 출력하고, 이 과정을 ExpressJS로 제작한 서버에 /upload 신호로 넘겨 처리한다.
 
 \begin{figure}[h]
@@ -707,12 +707,12 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
     \caption{1차 그래프 JSON 파일}
 \end{figure}
 
-처리가 완료가 되면, "front_src/go/source.go"를 이용하여 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 "child_process" 내에 있는 "exec" 함수를 이용한다.
-분석기를 돌리면 분석기의 분석 과정이 생략된 1차 그래프 생성을 위한 JSON 파일이 "front_src/json/output.json" 생성된다. 추후에 변형을 가할 때 용이하도록 분리해 놓은 것이다.
+처리가 완료가 되면, \verb|front_src/go/source.go|를 이용하여 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 \verb|child_process| 내에 있는 \verb|exec| 함수를 이용한다.
+분석기를 돌리면 분석기의 분석 과정이 생략된 1차 그래프 생성을 위한 JSON 파일이 \verb|front_src/json/output.json| 생성된다. 추후에 변형을 가할 때 용이하도록 분리해 놓은 것이다.
 이 과정을 ExpressJS로 제작한 서버에 /run 신호로 넘겨 처리하고 ReactJS 클라이언트로 복귀한다.
 
 이후, 분석 과정이 생략된 경우를 감안하여 1차로 MermaidJS 그래프를 생성하여, 가운데 그래프 화면에 띄워준다.
-이 과정에서, 향후 분석 과정을 각 그래프의 적용해야 하기 때문에 "Mermaid_t"와 그 하위 클래스를 만들어 인스턴스로 저장하여준다.
+이 과정에서, 향후 분석 과정을 각 그래프의 적용해야 하기 때문에 \verb|Mermaid_t|와 그 하위 클래스를 만들어 인스턴스로 저장하여준다.
 
 \begin{figure}[h]
     \centering
@@ -721,11 +721,11 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 \end{figure}
 
 바로 분석 과정을 생성하기 위해, 곧장 ExpressJS로 제작한 서버에 /debug 신호로 넘겨 처리할 준비를 한다.
-이 때, "front_src/go/source.go"를 이용하여 다른 플래그로 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 "child_process" 내에 있는 "exec" 함수를 이용한다.
-분석기를 돌리면 분석기의 분석 과정이 기록된 JSON 파일이 "front_src/json/debug.json" 생성되고, 이를 JSON 형식으로 클라이언트로 귀속한다.
-귀속된 JSON 파일은 2차 MermaidJS 그래프를 제작을 위하여, "Debug_t" 클래스를 만들고 이를 배열로서 저장한다.
+이 때, \verb|front_src/go/source.go|를 이용하여 다른 플래그로 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 \verb|child_process| 내에 있는 \verb|exec| 함수를 이용한다.
+분석기를 돌리면 분석기의 분석 과정이 기록된 JSON 파일이 \verb|front_src/json/debug.json| 생성되고, 이를 JSON 형식으로 클라이언트로 귀속한다.
+귀속된 JSON 파일은 2차 MermaidJS 그래프를 제작을 위하여, \verb|Debug_t| 클래스를 만들고 이를 배열로서 저장한다.
 
-"Debug_t" 배열의 귀속된 인스턴스 중, 경고 혹은 오류와 같은 인스턴스는 오른쪽 창에 띄우도록 준비한다.
+\verb|Debug_t| 배열의 귀속된 인스턴스 중, 경고 혹은 오류와 같은 인스턴스는 오른쪽 창에 띄우도록 준비한다.
 단, 분석 과정이 기록된 인스턴스들은 따로 다른 배열로 분리시킨 후, 각 변동 과정을 하이라이트한 MermaidJS 소스 코드 배열을 별도로 생성하여 준비한다.
 이는, 분석 과정을 조작하여 살펴볼 때, MermaidJS가 유동적으로 변화할 수 없는, 컴파일 되어있는 SVG 형식으로 그래프를 출력하기 때문에,
 컴파일을 하기 위한 목적과 함께, 슬라이더 구현도 for-range로 처리할 수 있다는 장점도 겸하고 있어 다음과 같은 방식을 채택하였다.
