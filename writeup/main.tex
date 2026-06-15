@@ -761,7 +761,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 4. Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
 5. Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
 6. panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
-7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 반드시 필요한 프로그래밍 언어다.
+7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
 
 \subsubsection{시스템 기능 요구사항}
 % Parse Go files
@@ -792,6 +792,16 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \textsf{TraceInspector} 분석기는 Go 소스 파일 파싱을 위한 \textsf{go/parser}\cite{goparser} 패키지를 활용한다.
 이후의 모든 분석 단계는 외부 라이브러리를 활용하지 않고 직접 구현되었지만 상술했듯이 요약해석 이론 자체는 잘 알려진 정적 분석 기법이다.
+
+\textsf{TraceInspector} 분석기 UI는 다음과 같은 요소들을 사용한다.
+
+1. React + TypeScript + Vite + ExpressJS: 각 요소는 프로그램 작동을 위한 핵심 프레임 요소들이며, 사용자 또한 반드시 각 요소를 설치하여야 동작한다.
+2. Cascadia Mono with Nerd Font: 현 프론트에 사용되었던 글꼴이며, 아이콘 또한 현 글꼴에서 제공되는 아이콘을 사용하였다.
+3. CodeMirror: 가운데 왼쪽에 있는 코드 에디터를 구성하기 위해 사용된 라이브러리다.
+4. Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
+5. Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
+6. panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
+7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
 
 \subsubsection{현실적 제한 요소 및 그 해결 방안}
 
