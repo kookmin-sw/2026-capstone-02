@@ -17,6 +17,7 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{tabularx}
+\usepackage{float}
 
 
 \usetikzlibrary{fit}
@@ -653,7 +654,116 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 
 \paragraph{\textsf{TraceInspector} 프론트엔드} ~\\
-% frontend info here 
+
+\traceinspector 분석기가 위와 같은 이론을 바탕으로 결과값을 내뱉어 준다.
+하지만, 이 상태 만으로, 프로젝트가 추구하는 "알고리즘 시각화"라는 개념을 실현하기는 힘들다.
+따라서, 분석기와 연계하여 분석기의 출력을 정의하고 그를 바탕으로 UI와 실효 기능을 만들게 되었다.
+
+프론트엔드 개발의 다음과 같은 원칙(Code of Conduct)을 적용하였으며, 이를 최상위로 추구한다. 
+
+1. 복잡한 구조보다는 프로젝트가 추구하는 바를 실현하기 위해, KISS(Keep It Simple and Stupid) 철학을 준수한다.
+2. 프론트엔드가 분석기인 만큼, 절대적인 안정성과 코드의 배포성을 지키기 위해 불필요한 라이브러리 사용은 지양한다.
+3. 기능은 물론이고, 사소한 디자인 또한 모든 브라우저에서 동일하게 적용함을 원칙으로 한다.
+
+\subparagraph{UI 요약설명} ~\\
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/00.jpg}
+    \caption{\traceinspector 전체 UI 구조}
+\end{figure}
+
+프론트엔드 UI는 "React-tRace"와 유사하게 제작 되었으며, 추가 설명은 다음 소제목에서 다루겠다.
+
+상단에는 분석기 조작버튼이 존재하며, 각각 파일 입력, 분석 개시, 자동 재생 기능으로 구성되어 있다.
+중간에는 각각 소스코드의 내용을 띄워주는 창, 분석한 그래프를 띄워주는 창, 분석기가 잡은 오류나 경고를 띄우는 창으로 구성되어 있다.
+하단에는 분석기가 분석한 과정을 미디어 플레이어 처럼 조작하여 확인할 수 있는 슬라이더 바가 존재하며, 방향키나 드래그, 자동 재생 기능으로 제어할 수 있다.
+
+\subparagraph{작동방식 상세설명} ~\\
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/01.jpg}
+    \caption{초기 UI}
+\end{figure}
+
+프론트엔드를 실행하면 위와 같은 창이 생성이 된다. 
+여기서 "Open" 버튼을 눌러 Go 소스코드를 불러온다.
+
+위 기능을 위해, HTML의 기본으로 내장되어 있는 파일 입력을 사용하였고,
+파일 입력이 성공하면, 왼쪽 코드 창에 출력한다.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/02.jpg}
+    \caption{Open 이후 UI}
+\end{figure}
+
+다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 \\ \verb|front_src/go/source.go| 경로에 저장된다.
+이때, "Multer" 라이브러리를 이용하여 파일 시스템에 직접적으로 출력하고, 이 과정을 ExpressJS로 제작한 서버에 /upload 신호로 넘겨 처리한다.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/03.jpg}
+    \caption{1차 그래프 JSON 파일}
+\end{figure}
+
+처리가 완료가 되면, \verb|front_src/go/source.go|를 이용하여 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 \verb|child_process| 내에 있는 \verb|exec| 함수를 이용한다.
+분석기를 돌리면 분석기의 분석 과정이 생략된 1차 그래프 생성을 위한 JSON 파일이 \\ \verb|front_src/json/output.json| 생성된다. 추후에 변형을 가할 때 용이하도록 분리해 놓은 것이다.
+이 과정을 ExpressJS로 제작한 서버에 /run 신호로 넘겨 처리하고 ReactJS 클라이언트로 복귀한다.
+
+이후, 분석 과정이 생략된 경우를 감안하여 1차로 MermaidJS 그래프를 생성하여, 가운데 그래프 화면에 띄워준다.
+이 과정에서, 향후 분석 과정을 각 그래프의 적용해야 하기 때문에 \verb|Mermaid_t|와 그 하위 클래스를 만들어 인스턴스로 저장하여준다.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/04.jpg}
+    \caption{2차 그래프 JSON 파일}
+\end{figure}
+
+바로 분석 과정을 생성하기 위해, 곧장 ExpressJS로 제작한 서버에 /debug 신호로 넘겨 처리할 준비를 한다.
+이 때, \verb|front_src/go/source.go|를 이용하여 다른 플래그로 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 \verb|child_process| 내에 있는 \verb|exec| 함수를 이용한다.
+분석기를 돌리면 분석기의 분석 과정이 기록된 JSON 파일이 \verb|front_src/json/debug.json| 생성되고, 이를 JSON 형식으로 클라이언트로 귀속한다.
+귀속된 JSON 파일은 2차 MermaidJS 그래프를 제작을 위하여, \verb|Debug_t| 클래스를 만들고 이를 배열로서 저장한다.
+
+\verb|Debug_t| 배열의 귀속된 인스턴스 중, 경고 혹은 오류와 같은 인스턴스는 오른쪽 창에 띄우도록 준비한다.
+단, 분석 과정이 기록된 인스턴스들은 따로 다른 배열로 분리시킨 후, 각 변동 과정을 하이라이트한 MermaidJS 소스 코드 배열을 별도로 생성하여 준비한다.
+이는, 분석 과정을 조작하여 살펴볼 때, MermaidJS가 유동적으로 변화할 수 없는, 컴파일 되어있는 SVG 형식으로 그래프를 출력하기 때문에,
+컴파일을 하기 위한 목적과 함께, 슬라이더 구현도 for-range로 처리할 수 있다는 장점도 겸하고 있어 다음과 같은 방식을 채택하였다.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/05.jpg}
+    \caption{Run 이후 UI}
+\end{figure}
+
+슬라이더 생성이 완료되면, 각 그래프와 디버그 창을 슬라이더와 연동시키고 Zoom 기능이나 Drag 기능을 위해 부가적인 요소를 초기화한다.
+최종적으로, 모든 것들이 연동되어 있는 슬라이더와 2차 그래프를 생성하여 "Run" 연산을 모두 마친다.
+
+이 모든과정은 "Run" 버튼 한번에 클릭으로 이루어지기에, 소스코드가 커지면 그의 비례하여 초기 소요시간이나 메모리 사용량이 증가할 수 있으나,
+추가적인 갱신은 이미 완료한 상태이기에, 딜레이의 요소는 슬라이더 조정 간에 생길 수 있는 컴파일 시간이 전부이며, 메모리 사용량은 증가하지 않는다.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/front/06.jpg}
+    \caption{실행 중인 UI}
+\end{figure}
+
+각 변동사항은 그래프에 빨간색 글씨로 표기되며, 아래 하단에 삼각 점은 경고 및 오류가 발생한 위치를 찍어주는 점이다.
+그래프를 조정하여 변동사항을 실시간으로 확인 할 수 있으며, "Play" 버튼을 눌러 자동화 할 수 있다.
+
+\subparagraph{사용요소 상세설명} ~\\
+
+위에서 잠깐 언급했지만, 이 UI를 구성하기 위해 들어간 요소들이 대거 있으며, 이를 간단히 소개하도록 하겠다.
+
+1. React + TypeScript + Vite + ExpressJS: 각 요소는 프로그램 작동을 위한 핵심 프레임 요소들이며, 사용자 또한 반드시 각 요소를 설치하여야 동작한다.
+2. Cascadia Mono with Nerd Font: 현 프론트에 사용되었던 글꼴이며, 아이콘 또한 현 글꼴에서 제공되는 아이콘을 사용하였다.
+3. CodeMirror: 가운데 왼쪽에 있는 코드 에디터를 구성하기 위해 사용된 라이브러리다.
+4. Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
+5. Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
+6. panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
+7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
+
 \subsubsection{시스템 기능 요구사항}
 % Parse Go files
 % Construct CFG
@@ -666,9 +776,11 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 \subsubsection{시스템 비기능(품질) 요구사항} 
 % modular domains, abstract domain interface
 % language/domain extensibility
+
+\clearpage
 \subsubsection{시스템 구조 및 설계도}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.99\textwidth]{images/architecture.png}
     \caption{\traceinspector 전체 시스템 구조}
@@ -683,6 +795,16 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \textsf{TraceInspector} 분석기는 Go 소스 파일 파싱을 위한 \textsf{go/parser}\cite{goparser} 패키지를 활용한다.
 이후의 모든 분석 단계는 외부 라이브러리를 활용하지 않고 직접 구현되었지만 상술했듯이 요약해석 이론 자체는 잘 알려진 정적 분석 기법이다.
+
+\textsf{TraceInspector} 분석기 UI는 다음과 같은 요소들을 사용한다.
+
+1. React + TypeScript + Vite + ExpressJS: 각 요소는 프로그램 작동을 위한 핵심 프레임 요소들이며, 사용자 또한 반드시 각 요소를 설치하여야 동작한다.
+2. Cascadia Mono with Nerd Font: 현 프론트에 사용되었던 글꼴이며, 아이콘 또한 현 글꼴에서 제공되는 아이콘을 사용하였다.
+3. CodeMirror: 가운데 왼쪽에 있는 코드 에디터를 구성하기 위해 사용된 라이브러리다.
+4. Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
+5. Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
+6. panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
+7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
 
 \subsubsection{현실적 제한 요소 및 그 해결 방안}
 
@@ -734,6 +856,51 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
     \item \verb|create_cfg.go|는 \imp AST를 CFG로 번역하는 알고리즘을 구현한다.
 \end{itemize}
 
+\verb|front_src| 경로는 분석기 UI를 담고 있으며, 다음과 같은 하위 경로로 세분화되어 있다.
+
+\verb|bin| 경로에는 UI에서 활용되는 CLI 분석기 바이너리가 생성되어 있어야 한다:
+\begin{itemize}
+    \item \verb|traceinspector.o|는 UNIX 계열에서 돌릴 수 있는 build.sh 스크립트를 실행 하였을 때, 생성되는 CLI 분석기 바이너리 이름이다.
+    \item \verb|traceinspector.exe|는 Windows 계열에서 돌릴 수 있는 build.bat 스크립트를 실행 하였을 때, 생성되는 CLI 분석기 바이너리 이름이다.
+\end{itemize}
+
+\verb|json| 경로에는 CLI 분석기 바이너리가 서버에서 작동 시 만들어 주는 JSON 파일들이 생성되어 있어야 한다:
+\begin{itemize}
+    \item \verb|output.json|은 1차 MermaidJS 흐름 차트 생성을 위한 그래프 노드 및 엣지 정보가 출력된다.
+    \item \verb|debug.json|은 2차 MermaidJS 흐름 차트 생성을 위한 분석 과정 정보가 출력된다.
+\end{itemize}
+
+\verb|ttf| 경로에는 분석기 UI가 사용하는 글꼴들이 존재한다:
+\begin{itemize}
+    \item \verb|CaskaydiaCoveNerdFontMono-*.ttf|는 유니코드 문자셋을 변형하여 많은 아이콘을 추가한 "Nerd Font"와 "Cascadia Mono"를 합친 글꼴이다.
+\end{itemize}
+
+\verb|src| 경로에는 분석기 UI 제작에 사용된 소스코드를 담고 있으며, 다음과 같은 하위 경로로 세분화되어 있다.
+
+\verb|client| 경로에는 ReactJS 클라이언트 제작을 위해 사용한 소스 파일이 존재한다:
+\begin{itemize}
+    \item \verb|App.css|는 전체 UI에 적용되는 기본 스타일을 정의한다.
+    \item \verb|App.tsx|는 실질적인 UI 제작에 사용된 모든 함수 및 기능을 구현한다.
+    \item \verb|Footer.css|는 하단 UI 요소들에 적용되는 스타일을 정의한다.
+    \item \verb|Header.css|는 상단 UI 요소들에 적용되는 스타일을 정의한다.
+    \item \verb|index.tsx|는 App.tsx 파일과 index.html 파일을 연결해주는 파일이다.
+    \item \verb|Main.css|는 중간 UI 요소들에 적용되는 스타일을 정의한다.
+\end{itemize}
+
+\verb|server| 경로에는 ExpressJS 서버 제작을 위해 사용한 소스 파일이 존재한다:
+\begin{itemize}
+    \item \verb|main.ts|는 클라이언트와 상호작용하는 모든 호출을 처리하는 함수 및 기능을 구현한다.
+\end{itemize}
+
+탑레벨 \verb|front_src| 경로에는 다음과 같은 중요 소스 파일들이 존재한다:
+\begin{itemize}
+    \item \verb|index.html|는 최상단 HTML 문서이다.
+    \item \verb|package.json|는 분석기 UI 제작에 사용되는 npm 라이브러리를 기술한 파일들이다.
+    \item \verb|eslint.config.js|는 JavaScript 정적분석기 설정을 정의하는 파일이다.
+    \item \verb|vite.config.ts|는 Vite 핸들러가 사용하는 설정을 정의하는 파일이다.
+    \item \verb|tsconfig*|는 TypeScript 컴파일러가 사용하는 설정을 정의하는 파일들이다.
+\end{itemize}
+
 \subsection{기대효과 및 활용방안}
 \section{자기평가}
 \section{참고 문헌}
@@ -753,6 +920,18 @@ CFG 탐색 창은 드래그와 스크롤을 통해 이동 및 확대가 가능�
 마지막으로 재상 바 하단의 노란색 화살표는 오류 상태가 최초로 탐지된 분석 단계를 나타낸다. 화살표를 클릭하면 해당 분석 상태로 이동하고, 오류 정보와 더불어 어떤 명령의 어떤 변수 상태에서 오류가 발생하게 되었는지 관찰 가능하다.
 
 \subsection{운영자 메뉴얼}
+
+\traceinspector 분석기를 127.0.0.1:3000 에서 활성화하기 위해, 다음과 같은 작업이 있어야 한다.
+
+\begin{enumerate}
+    \item Go와 NodeJS를 설치한다.
+    \item 운영체제에 맞게 \verb|build.sh| 혹은 \verb|build.bat|을 실행한다.
+    \item \verb|front_src| 폴더가 경로로 되게 끔 터미널을 실행한다.
+    \item \verb|node_modules| 또는 \verb|package-lock.json|가 존재한다면 즉시 삭제한다. (단, 초기 설정에만 해당한다.)
+    \item \verb|npm install| 명령을 실행하여, 환경 설치 및 라이브러리를 다운받는다.
+    \item \verb|npm run dev| 명령을 실행하여, 서버를 개설한다.
+\end{enumerate}
+
 \subsection{배포 가이드}
 \subsection{\textsf{Imp} 형식 의미론} \label{imp_semantics}
 \input{figures/imp_bigstep.tex}
