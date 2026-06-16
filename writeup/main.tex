@@ -19,6 +19,7 @@
 \usepackage{tabularx}
 \usepackage{float}
 \usepackage[user,lastpage]{zref}
+\usepackage{pdfpages}
 
 
 \usetikzlibrary{fit}
@@ -35,11 +36,12 @@
 
 \begin{document}
 \input{style/main_title.tex}
+\input{style/side_spine.tex}
 \input{style/submission_statement.tex}
 \input{style/master_toc.tex}
 
 \input{style/abstract_title.tex}
-\input{style/abstract.tex}
+\includepdf[pages=-]{style/summary.pdf}
 
 \input{style/mid_section_title.tex}
 \input{style/mid_presentation.tex}
@@ -677,10 +679,10 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \subparagraph{UI 요약설명} ~\\
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/00.jpg}
-    \caption{\traceinspector 전체 UI 구조}
+    \caption{전체 UI 구조}
 \end{figure}
 
 프론트엔드 UI는 "React-tRace"와 유사하게 제작 되었으며, 추가 설명은 다음 소제목에서 다루겠다.
@@ -691,7 +693,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \subparagraph{작동방식 상세설명} ~\\
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/01.jpg}
     \caption{초기 UI}
@@ -703,7 +705,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 위 기능을 위해, HTML의 기본으로 내장되어 있는 파일 입력을 사용하였고,
 파일 입력이 성공하면, 왼쪽 코드 창에 출력한다.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/02.jpg}
     \caption{Open 이후 UI}
@@ -712,7 +714,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 \\ \verb|front_src/go/source.go| 경로에 저장된다.
 이때, "Multer" 라이브러리를 이용하여 파일 시스템에 직접적으로 출력하고, 이 과정을 ExpressJS로 제작한 서버에 /upload 신호로 넘겨 처리한다.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/03.jpg}
     \caption{1차 그래프 JSON 파일}
@@ -725,7 +727,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 이후, 분석 과정이 생략된 경우를 감안하여 1차로 MermaidJS 그래프를 생성하여, 가운데 그래프 화면에 띄워준다.
 이 과정에서, 향후 분석 과정을 각 그래프의 적용해야 하기 때문에 \verb|Mermaid_t|와 그 하위 클래스를 만들어 인스턴스로 저장하여준다.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/04.jpg}
     \caption{2차 그래프 JSON 파일}
@@ -741,7 +743,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 이는, 분석 과정을 조작하여 살펴볼 때, MermaidJS가 유동적으로 변화할 수 없는, 컴파일 되어있는 SVG 형식으로 그래프를 출력하기 때문에,
 컴파일을 하기 위한 목적과 함께, 슬라이더 구현도 for-range로 처리할 수 있다는 장점도 겸하고 있어 다음과 같은 방식을 채택하였다.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/05.jpg}
     \caption{Run 이후 UI}
@@ -753,7 +755,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 이 모든과정은 "Run" 버튼 한번에 클릭으로 이루어지기에, 소스코드가 커지면 그의 비례하여 초기 소요시간이나 메모리 사용량이 증가할 수 있으나,
 추가적인 갱신은 이미 완료한 상태이기에, 딜레이의 요소는 슬라이더 조정 간에 생길 수 있는 컴파일 시간이 전부이며, 메모리 사용량은 증가하지 않는다.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/front/06.jpg}
     \caption{실행 중인 UI}
@@ -766,13 +768,15 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 위에서 잠깐 언급했지만, 이 UI를 구성하기 위해 들어간 요소들이 대거 있으며, 이를 간단히 소개하도록 하겠다.
 
-1. React + TypeScript + Vite + ExpressJS: 각 요소는 프로그램 작동을 위한 핵심 프레임 요소들이며, 사용자 또한 반드시 각 요소를 설치하여야 동작한다.
-2. Cascadia Mono with Nerd Font: 현 프론트에 사용되었던 글꼴이며, 아이콘 또한 현 글꼴에서 제공되는 아이콘을 사용하였다.
-3. CodeMirror: 가운데 왼쪽에 있는 코드 에디터를 구성하기 위해 사용된 라이브러리다.
-4. Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
-5. Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
-6. panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
-7. Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
+\begin{enumerate}
+    \item React + TypeScript + Vite + ExpressJS: 각 요소는 프로그램 작동을 위한 핵심 프레임 요소들이며, 사용자 또한 반드시 각 요소를 설치하여야 동작한다.
+    \item Cascadia Mono with Nerd Font: 현 프론트에 사용되었던 글꼴이며, 아이콘 또한 현 글꼴에서 제공되는 아이콘을 사용하였다.
+    \item CodeMirror: 가운데 왼쪽에 있는 코드 에디터를 구성하기 위해 사용된 라이브러리다.
+    \item Multer: 직접적인 서버 내부 파일 시스템에 입출력을 수행하기 위해 사용된 라이브러리다.
+    \item Mermaid: 분석 과정 시각화를 위해 사용된 흐름차트 생성 라이브러리다.
+    \item panzoom: 그래프를 확대하거나 드래그 하여 탐색할 수 있도록 사용된 라이브러리다.
+    \item Go: 프론트 개발에는 사용되지 않았지만, 동작을 위한 CLI 분석기 제작을 위해 필요한 프로그래밍 언어다.
+\end{enumerate}
 
 \subsubsection{시스템 기능 요구사항}
 
