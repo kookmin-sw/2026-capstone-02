@@ -17,6 +17,7 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{tabularx}
+\usepackage{float}
 
 
 \usetikzlibrary{fit}
@@ -668,7 +669,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/00.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/00.jpg}
     \caption{\traceinspector 전체 UI 구조}
 \end{figure}
 
@@ -682,7 +683,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/01.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/01.jpg}
     \caption{초기 UI}
 \end{figure}
 
@@ -694,21 +695,21 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/02.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/02.jpg}
     \caption{Open 이후 UI}
 \end{figure}
 
-다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 \verb|front_src/go/source.go| 경로에 저장된다.
+다음으로, 분석을 위해 "Run" 버튼을 누르게 되면, 입력 되어 있는 소스코드가 \\ \verb|front_src/go/source.go| 경로에 저장된다.
 이때, "Multer" 라이브러리를 이용하여 파일 시스템에 직접적으로 출력하고, 이 과정을 ExpressJS로 제작한 서버에 /upload 신호로 넘겨 처리한다.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/03.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/03.jpg}
     \caption{1차 그래프 JSON 파일}
 \end{figure}
 
 처리가 완료가 되면, \verb|front_src/go/source.go|를 이용하여 분석기를 돌리고, 이 과정은 NodeJS 라이브러리 \verb|child_process| 내에 있는 \verb|exec| 함수를 이용한다.
-분석기를 돌리면 분석기의 분석 과정이 생략된 1차 그래프 생성을 위한 JSON 파일이 \verb|front_src/json/output.json| 생성된다. 추후에 변형을 가할 때 용이하도록 분리해 놓은 것이다.
+분석기를 돌리면 분석기의 분석 과정이 생략된 1차 그래프 생성을 위한 JSON 파일이 \\ \verb|front_src/json/output.json| 생성된다. 추후에 변형을 가할 때 용이하도록 분리해 놓은 것이다.
 이 과정을 ExpressJS로 제작한 서버에 /run 신호로 넘겨 처리하고 ReactJS 클라이언트로 복귀한다.
 
 이후, 분석 과정이 생략된 경우를 감안하여 1차로 MermaidJS 그래프를 생성하여, 가운데 그래프 화면에 띄워준다.
@@ -716,7 +717,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/04.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/04.jpg}
     \caption{2차 그래프 JSON 파일}
 \end{figure}
 
@@ -732,7 +733,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/05.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/05.jpg}
     \caption{Run 이후 UI}
 \end{figure}
 
@@ -744,7 +745,7 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.99\textwidth]{images/front/06.jpg}
+    \includegraphics[width=0.8\textwidth]{images/front/06.jpg}
     \caption{실행 중인 UI}
 \end{figure}
 
@@ -775,9 +776,11 @@ widening 연산 $\mathsf{AbstractNodeMemMap}(l') \triangledown M^{\#'}$을 적�
 \subsubsection{시스템 비기능(품질) 요구사항} 
 % modular domains, abstract domain interface
 % language/domain extensibility
+
+\clearpage
 \subsubsection{시스템 구조 및 설계도}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.99\textwidth]{images/architecture.png}
     \caption{\traceinspector 전체 시스템 구조}
@@ -920,12 +923,14 @@ CFG 탐색 창은 드래그와 스크롤을 통해 이동 및 확대가 가능�
 
 \traceinspector 분석기를 127.0.0.1:3000 에서 활성화하기 위해, 다음과 같은 작업이 있어야 한다.
 
-1. "Go"와 "NodeJS"를 설치한다.
-2. 운영체제에 맞게 "build.sh" 혹은 "build.bat"을 실행한다.
-3. "front_src" 폴더가 경로로 되게 끔 터미널을 실행한다.
-4. "node_modules" 또는 "package-lock.json"가 존재한다면 즉시 삭제한다. (단, 초기 설정에만 해당한다.)
-5. "npm install" 명령을 실행하여, 환경 설치 및 라이브러리를 다운받는다.
-6. "npm run dev" 명령을 실행하여, 서버를 개설한다.
+\begin{enumerate}
+    \item Go와 NodeJS를 설치한다.
+    \item 운영체제에 맞게 \verb|build.sh| 혹은 \verb|build.bat|을 실행한다.
+    \item \verb|front_src| 폴더가 경로로 되게 끔 터미널을 실행한다.
+    \item \verb|node_modules| 또는 \verb|package-lock.json|가 존재한다면 즉시 삭제한다. (단, 초기 설정에만 해당한다.)
+    \item \verb|npm install| 명령을 실행하여, 환경 설치 및 라이브러리를 다운받는다.
+    \item \verb|npm run dev| 명령을 실행하여, 서버를 개설한다.
+\end{enumerate}
 
 \subsection{배포 가이드}
 \subsection{\textsf{Imp} 형식 의미론} \label{imp_semantics}
