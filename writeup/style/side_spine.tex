@@ -1,0 +1,103 @@
+\begin{titlepage}
+\thispagestyle{empty}
+
+\newgeometry{margin=0cm}
+
+\begin{tikzpicture}[remember picture,overlay]
+
+% ===== 바깥 테두리 =====
+
+\draw[line width=0.2pt]
+    ($(current page.north west)+(1cm,-1cm)$)
+    rectangle
+    ($(current page.north west)+(3.5cm,-29cm)$);
+
+% ===== 구분선 =====
+
+\draw
+    ($(current page.north west)+(1cm,-6cm)$)
+    --
+    ($(current page.north west)+(3.5cm,-6cm)$);
+
+\draw
+    ($(current page.north west)+(1cm,-7.5cm)$)
+    --
+    ($(current page.north west)+(3.5cm,-7.5cm)$);
+
+\draw
+    ($(current page.north west)+(1cm,-21.5cm)$)
+    --
+    ($(current page.north west)+(3.5cm,-21.5cm)$);
+
+\draw
+    ($(current page.north west)+(1cm,-23cm)$)
+    --
+    ($(current page.north west)+(3.5cm,-23cm)$);
+
+% ===== 상단 셀 =====
+
+\node[
+    align=center,
+    font=\small
+]
+at ($(current page.north west)+(2.25cm,-3.5cm)$)
+{
+\textbf{캡}\\
+\textbf{스}\\
+\textbf{톤}\\
+\textbf{디}\\
+\textbf{자}\\
+\textbf{인}\\
+\textbf{Ⅰ} \\[0.5em]
+\textbf{(2026-}\\
+\textbf{02)}
+};
+
+% ===== 가운데 셀 =====
+
+\node[
+    align=center,
+    font=\LARGE
+]
+at ($(current page.north west)+(2.25cm,-13cm)$)
+{
+\textsf{T}\\[-5pt]
+\textsf{r}\\[-5pt]
+\textsf{a}\\[-5pt]
+\textsf{c}\\[-5pt]
+\textsf{e}\\[-5pt]
+\textsf{I}\\[-5pt]
+\textsf{n}\\[-5pt]
+\textsf{s}\\[-5pt]
+\textsf{p}\\[-5pt]
+\textsf{e}\\[-5pt]
+\textsf{c}\\[-5pt]
+\textsf{t}\\[-5pt]
+\textsf{o}\\[-5pt]
+\textsf{r}
+};
+
+% ===== 하단 셀 =====
+
+\node[
+    align=center,
+    font=\large
+]
+at ($(current page.north west)+(2.25cm,-26cm)$)
+{
+\begin{tabular}{cc}
+소 & 국 \\
+프 & 민 \\
+트 & 대 \\
+웨 & 학 \\
+어 & 교 \\
+학 &   \\
+부 &
+\end{tabular}
+};
+
+\end{tikzpicture}
+
+\restoregeometry
+
+\end{titlepage}

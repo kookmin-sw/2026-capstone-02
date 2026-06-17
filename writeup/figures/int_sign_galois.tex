@@ -1,0 +1,79 @@
+\begin{tikzpicture}[
+    node distance=1cm,
+    lattice/.style={},
+    map/.style={->,blue,thick},
+]
+
+%----------------------------------
+% Concrete lattice
+%----------------------------------
+
+\node[lattice] (cTop) {$\{-1,0,1\}$};
+
+\node[lattice,below left=of cTop] (cNeg) {$\{-1\}$};
+\node[lattice,below=of cTop] (cZero) {$\{0\}$};
+\node[lattice,below right=of cTop] (cPos) {$\{1\}$};
+
+\node[lattice,below=of cZero] (cBot) {$\emptyset$};
+
+\draw (cTop) -- (cNeg);
+\draw (cTop) -- (cZero);
+\draw (cTop) -- (cPos);
+
+\draw (cNeg) -- (cBot);
+\draw (cZero) -- (cBot);
+\draw (cPos) -- (cBot);
+
+%----------------------------------
+% Abstract lattice
+%----------------------------------
+
+\begin{scope}[xshift=8cm]
+
+\node[lattice] (aTop) {$\top$};
+
+\node[lattice,below left=of aTop] (aNeg) {$-$};
+\node[lattice,below=of aTop] (aZero) {$0$};
+\node[lattice,below right=of aTop] (aPos) {$+$};
+
+\node[lattice,below=of aZero] (aBot) {$\bot$};
+
+\draw (aTop) -- (aNeg);
+\draw (aTop) -- (aZero);
+\draw (aTop) -- (aPos);
+
+\draw (aNeg) -- (aBot);
+\draw (aZero) -- (aBot);
+\draw (aPos) -- (aBot);
+
+\end{scope}
+
+%----------------------------------
+% Abstraction arrows α
+%----------------------------------
+
+\draw[map]
+    (cNeg.east)
+    to[bend left=15]
+    node[midway,above] {$\alpha$}
+    (aNeg.west);
+
+\draw[map]
+    (cZero.east)
+    -- (aZero.west);
+
+\draw[map]
+    (cPos.east)
+    -- (aPos.west);
+
+\draw[map]
+    (cTop.east)
+    to[bend left=10]
+    (aTop.west);
+
+\draw[map]
+    (cBot.east)
+    to[bend right=10]
+    (aBot.west);
+
+\end{tikzpicture}

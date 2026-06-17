@@ -1,0 +1,124 @@
+\begin{tikzpicture}[
+    >=Stealth,
+    node distance=1.8cm and 1.5cm,
+    every node/.style={
+        circle,
+        draw=cyan!20!black,
+        thick,
+        minimum size=10mm,
+        inner sep=0pt,
+        fill=gray!10
+    },
+    edge/.style={
+        ->,
+        thick
+    },
+    active/.style={
+        fill=red!85,
+        draw=cyan!20!black
+    },
+    pathline/.style={
+        red,
+        ultra thick
+    }
+]
+
+% Layer 0
+\node (s) at (0,0) {$S$};
+
+% Layer 1
+\node (a1) at (2,3) {};
+\node (a2) at (2,1.5) {};
+\node (a3) at (2,0) {};
+\node (a4) at (2,-1.5) {};
+\node (a5) at (2,-3) {};
+
+% Layer 2
+\node (b1) at (4,4) {};
+\node (b2) at (4,2) {};
+\node (b3) at (4,0) {};
+\node (b4) at (4,-2) {};
+\node (b5) at (4,-4) {};
+
+% Layer 3
+\node (c1) at (6,4) {};
+\node (c2) at (6,2) {};
+\node (c3) at (6,0) {};
+\node (c4) at (6,-2) {};
+\node (c5) at (6,-4) {};
+
+% Layer 4
+\node[active] (d1) at (8,2) {$e_1$};
+\node[active] (d2) at (8,0) {$e_2$};
+\node[active] (d3) at (8,-2) {$e_3$};
+\node (d4) at (8,-4) {};
+
+% Layer 5
+\node[active] (e1) at (10,1) {$e_4$};
+\node[active] (e2) at (10,-1) {$e_5$};
+\node (e3) at (10,-3.5) {};
+
+% Layer 6
+\node[active] (f1) at (12,2) {$e_6$};
+\node[active] (f2) at (12,0) {$e_7$};
+\node (f3) at (12,-2) {};
+\node (f4) at (12,-4) {};
+
+% Edges
+\draw[edge] (s) -- (a1);
+\draw[edge] (s) -- (a2);
+\draw[edge] (s) -- (a3);
+\draw[edge] (s) -- (a4);
+\draw[edge] (s) -- (a5);
+
+\draw[edge] (a1) -- (b1);
+\draw[edge] (a2) -- (b2);
+\draw[edge] (a3) -- (b3);
+\draw[edge] (a4) -- (b4);
+\draw[edge] (a5) -- (b5);
+
+\draw[edge] (b1) -- (c1);
+\draw[edge] (b2) -- (c2);
+\draw[edge] (b3) -- (c3);
+\draw[edge] (b4) -- (c4);
+\draw[edge] (b5) -- (c5);
+
+% \draw[edge] (c1) -- (d1);
+\draw[edge] (c2) -- (d1);
+\draw[edge] (c2) -- (d2);
+\draw[edge] (c3) -- (d3);
+\draw[edge] (c4) -- (d4);
+
+\draw[edge] (d2) -- (e1);
+\draw[edge] (d2) -- (e2);
+\draw[edge] (d3) -- (e2);
+\draw[edge] (d3) -- (e3);
+
+\draw[edge] (e1) -- (f1);
+\draw[edge] (e2) -- (f2);
+\draw[edge] (e3) -- (f3);
+\draw[edge] (e3) -- (f4);
+
+% Highlighted propagation paths
+\draw[pathline]
+(s) --
+(a2.center) --
+(b2.center) --
+(c2.center) --
+(d1);
+
+\draw[pathline]
+(s) --
+(a2.center) --
+(b2.center) --
+(c2.center) --
+(d2);
+
+\draw[pathline]
+(s) --
+(a3.center) --
+(b3.center) --
+(c3.center) --
+(d3);
+
+\end{tikzpicture}

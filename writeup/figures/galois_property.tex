@@ -1,0 +1,83 @@
+\begin{tikzpicture}[
+    >=Latex,
+    domnode/.style={ellipse,draw,minimum width=2.5cm,minimum height=5cm},
+    map/.style={->,thick},
+]
+
+% =====================================================
+% Property 1 : c ⊆ γ(α(c))
+% =====================================================
+
+\node at (0,3.3) {\Large C};
+\node at (6,3.3) {\Large A};
+
+\node[domnode] (C1) at (0,0) {};
+\node[domnode] (A1) at (6,0) {};
+
+\node (c) at (0,-1.0) {$c$};
+\node (gac) at (0,1.0) {$\gamma(\alpha(c))$};
+
+\node (ac) at (A1.center) {$\alpha(c)$};
+
+\draw[map,blue]
+    (ac.west)
+    to[bend right=15]
+    node[above] {$\gamma$}
+    (gac.east);
+
+\draw[map,red]
+    (c.east)
+    to[bend right=15]
+    node[below] {$\alpha$}
+    (ac.west);
+
+\draw[dashed]
+    (c) 
+    -- node[right] {$\subseteq$}
+    (gac);
+
+\node[align=center] at (3,-3.5)
+{
+\Large $c \subseteq \gamma(\alpha(c))$\\[0.2em]
+보수적 과다추정
+};
+
+% =====================================================
+% Property 2 : α(γ(a)) = a
+% =====================================================
+
+\node at (11,3.3) {\Large C};
+\node at (17,3.3) {\Large A};
+
+\node[domnode] (C2) at (11,0) {};
+\node[domnode] (A2) at (17,0) {};
+
+\node (ga) at (C2.center) {$\gamma(a)$};
+
+\node (a) at (17,1.0) {$a$};
+\node (aga) at (17,-1.0) {$\alpha(\gamma(a))$};
+
+\draw[map,blue]
+    (a.west)
+    to[bend right=15]
+    node[above] {$\gamma$}
+    (ga.east);
+
+\draw[map,red]
+    (ga.east)
+    to[bend right=15]
+    node[below] {$\alpha$}
+    (aga.west);
+
+\draw[dashed]
+    (a) 
+    -- node[right] {$=$}
+    (aga);
+
+\node[align=center] at (14,-3.5)
+{
+\Large $\alpha(\gamma(a)) = a$\\[0.2em]
+요약상태의 복원
+};
+
+\end{tikzpicture}

@@ -1,0 +1,24 @@
+\begin{tikzpicture}[
+    node distance=1cm,
+    lattice/.style={},
+    map/.style={->,blue,thick},
+]
+
+%----------------------------------
+% Concrete lattice
+%----------------------------------
+
+\node[lattice] (cTop) {$\top$};
+
+\node[lattice,below left=of cTop] (cTrue) {$\mathbf{true}$};
+\node[lattice,below right=of cTop] (cFalse) {$\mathbf{false}$};
+
+\node[lattice,below right=of cTrue] (cBot) {$\bot$};
+
+\draw (cTop) -- (cTrue);
+\draw (cTop) -- (cFalse);
+
+\draw (cTrue) -- (cBot);
+\draw (cFalse) -- (cBot);
+
+\end{tikzpicture}
